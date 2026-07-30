@@ -7,12 +7,13 @@
 
 项目原有一个 `topic-interviewer` 技能：接收技术话题 -> 检索考点 -> 生成 8 道面试题 -> 存到 `question/` -> 用户作答 -> 评分。
 
-问题：**无去重机制**。同一话题多次生成会产生概念重叠的题目（已有的两份「Java 基础」中 HashMap、并发集合重复出现），且无持久化的话题/题目登记，知识无法复利积累。
+问题：**无去重机制**。同一话题多次生成会产生概念重叠的题目（已有的两份「Java 基础」中 HashMap、并发集合重复出现），且无持久化的话题/题目登记，知识无法复利积累。此外，参考答案在评分时临场生成，同一题在不同会话的答案可能不一致、无法复利积累。
 
 ## 2. 目标
 
-- 持久化积累「话题 + 题目」，作为去重依据与题库来源。
+- 持久化积累「话题 + 题目 + 参考答案」，作为去重依据、评分基准与题库来源。
 - 生成新题前先检索 wiki，避免重复。
+- 评分时优先从 wiki 检索已登记参考答案，保证评分基准稳定一致。
 - 后续基于 wiki 内容生成题库（精选题集）。
 
 ## 3. 非目标
@@ -46,15 +47,15 @@
 
 | LLM Wiki 层  | 本项目对应                                                                          |
 | ------------ | ----------------------------------------------------------------------------------- |
-| Raw sources  | 互联网检索结果 + 练习会话 `question/*.md`（含 AI 参考答案）                         |
-| Wiki         | `wiki/`（话题页 + 题库页 + 索引 + 日志）                                            |
-| Schema       | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `opencode/.skills/wiki/SKILL.md`（操作） |
+| Raw sources  | 互联网检索结果 + 练习会话 `question/*.md`（评分时写入 evaluation，AI 参考答案为 wiki 副本） |
+| Wiki         | `wiki/`（话题页含知识体系+题目登记+参考答案 / 题库页 / 索引 / 日志）                |
+| Schema       | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `.opencode/.skills/wiki/SKILL.md`（操作） |
 
 **产物归属：**
 
-- 话题页（知识体系 + 题目登记）：持久知识，去重依据 -> `wiki/topics/`
+- 话题页（知识体系 + 题目登记 + 参考答案）：持久知识，去重与评分依据 -> `wiki/topics/`
 - 题库（精选题集）：生成产物，归档回 wiki -> `wiki/banks/`
-- 练习会话（题目+作答+评分+参考答案）：个性化交互记录，ingest 的 raw source -> `question/`（wiki 外）
+- 练习会话（题目+作答+评分）：个性化交互记录，ingest 的 raw source -> `question/`（wiki 外；不含预生成答案，避免用户作答前看到）
 
 > 题库放进 wiki 而非独立目录，遵循 Karpathy「有价值的生成产物归档回 wiki 作为新页面」原则：题库是去个性化的可复用参考知识，应被 index 索引、被话题页反向链接、避免重复生成。
 
@@ -70,10 +71,10 @@ resume-agent/
 │   ├── SCHEMA.md                   # 规格：目录布局/页面格式/ID 约定
 │   ├── index.md                    # 内容索引（topics + banks）
 │   ├── log.md                      # append-only 操作日志
-│   ├── topics/                     # 话题页：知识体系 + 题目登记
+│   ├── topics/                     # 话题页：知识体系 + 题目登记 + 参考答案
 │   └── banks/                      # 题库页：精选题集
 ├── question/                       # 练习会话（raw source / 交互记录，wiki 外）
-└── opencode/.skills/
+└── .opencode/.skills/
     ├── wiki/SKILL.md               # 三操作：Ingest / Query / Lint
     └── topic-interviewer/
         ├── SKILL.md                # 接入 Query/Ingest
@@ -84,7 +85,7 @@ resume-agent/
 
 详见 `wiki/SCHEMA.md`。要点：
 
-- **话题页** `topics/{topic}.md`：frontmatter（topic/created/updated/question_count）+ 知识体系（考点大纲）+ 题目登记（每题一节 `### {ID}`，含难度/考点/题目/首次生成/来源）+ 关联（`[[话题]]` 链接）。
+- **话题页** `topics/{topic}.md`：frontmatter（topic/created/updated/question_count）+ 知识体系（考点大纲）+ 题目登记（每题一节 `### {ID}`，含难度/考点/题目/首次生成/来源，节内 `#### 参考答案` 子节存标准答案）+ 关联（`[[话题]]` 链接）。
 - **题库页** `banks/{name}.md`：frontmatter（bank/size/created/topics）+ 说明 + 题目列表（每题注明难度/考点，引用已登记 ID 或新题）。
 - **index.md**：topics 表 + banks 表。
 - **log.md**：append-only，`## [yyyy-MM-dd] op | subject`。
@@ -97,42 +98,53 @@ resume-agent/
 
 ## 9. 三操作详细步骤
 
-### 9.1 Query（检索去重）
+### 9.1 Query（检索）
+
+两种模式：
+
+**去重模式（生成题目前）：**
 
 1. Read `wiki/index.md`，判断 `wiki/topics/{topic}.md` 是否存在。
 2. 存在则 Read 它，提取题目登记全部条目（ID/考点/题目）与知识体系考点大纲；不存在则标记新话题。
 3. 输出 `{已出题目清单, 已覆盖考点, 未覆盖考点}`，生成时避开已出题、优先覆盖未覆盖考点。
 
+**答案检索模式（评分前）：**
+
+1. Read `wiki/topics/{topic}.md`（须已 Ingest）。
+2. 提取每题 `#### 参考答案`，按 ID/题目与待评分题目对齐。
+3. 输出 `{题目 -> 参考答案}` 作为评分基准；wiki 缺失时才临场补充，评分后 Ingest 回填。
+
 ### 9.2 Ingest（回写登记）
 
-1. 话题页不存在 -> 创建（frontmatter + 由考点提炼的知识体系 + 题目登记，ID 从 `{topic}-001` 起）。
-2. 话题页存在 -> 续编 ID（`{topic}-{max+1}`），追加题目登记，更新 frontmatter（updated/question_count），补充新考点进知识体系。
+1. 话题页不存在 -> 创建（frontmatter + 由考点提炼的知识体系 + 题目登记，ID 从 `{topic}-001` 起；每题含 `#### 参考答案`）。
+2. 话题页存在 -> 续编 ID（`{topic}-{max+1}`），追加题目登记（含参考答案），更新 frontmatter（updated/question_count），补充新考点进知识体系。
 3. 更新 `index.md` 话题行（题量/更新时间/摘要）。
 4. 追加 `log.md`：`## [date] ingest | {topic}` + 明细。
-5. 题库场景：新题 Ingest 回话题页，题库归档为 `wiki/banks/{name}.md`，更新 index 的 banks 表。
-6. 幂等：同来源重复 Ingest 按「来源 + 题目正文」判重，已存在则跳过。
+5. 评分后更新：若对某题参考答案有更优补充，更新该题 `#### 参考答案`，frontmatter `updated`=今日，log 注明「更新参考答案 {ID}」。
+6. 题库场景：新题 Ingest 回话题页（含参考答案），题库归档为 `wiki/banks/{name}.md`，更新 index 的 banks 表。
+7. 幂等：同来源重复 Ingest 按「来源 + 题目正文」判重，已存在则跳过。
 
 ### 9.3 Lint（健康检查）
 
 1. Read `index.md` + Glob 读取全部 `topics/*.md`、`banks/*.md`。
-2. 检查：重复/近似题、覆盖缺口、孤立页、索引不同步、断链。
+2. 检查：重复/近似题、参考答案缺失、覆盖缺口、孤立页、索引不同步、断链。
 3. 输出报告 + 修复建议；经确认后修复，每项追加 `## [date] lint | ...` 到 log。
 
 ## 10. topic-interviewer 集成
 
-在原有 6 步流程中插入 Query/Ingest：
+在原有流程中插入 Query/Ingest，并改为「生成时同步产出答案、评分时从 wiki 取答案」：
 
 1. 接收话题
-2. 检索准备：**Query wiki**（读 index + 话题页，取已出题目/考点）+ 互联网搜索补充考点
-3. 生成题目：避开 wiki 已登记题目，优先覆盖未出题考点；保存到 `question/{date}-{topic}-{rand}.md`
-4. **回写登记（Ingest）**：8 题登记进 `wiki/topics/{topic}.md`（不存在则创建含知识体系），更新 index + log
+2. 检索准备：**Query wiki（去重）**（读 index + 话题页，取已出题目/考点）+ 互联网搜索补充考点
+3. 生成题目与参考答案：避开 wiki 已登记题目，优先覆盖未出题考点；**为每题同步生成参考答案**；仅将题目保存到 `question/{date}-{topic}-{index}.md`（不含答案，index 为该话题递增序号，按已存在同话题文件取 max+1）
+4. **回写登记（Ingest）**：8 题及其参考答案登记进 `wiki/topics/{topic}.md`（不存在则创建含知识体系），更新 index + log
 5. 通知用户作答
 6. 等待作答
-7. 评分反馈
+7. 评分反馈：**Query wiki（答案检索）** 取回已登记参考答案作为基准 -> 逐题打分 -> 在 question 文件补 `### evaluation`（AI 参考答案取自 wiki）-> 汇总总成绩；若有更优补充则 Ingest 更新 wiki 答案
 
 ## 11. 题库生成
 
-基于 `wiki/topics/*.md` 的知识体系 + 已登记题目，生成跨话题或单话题的大规模题库，归档到 `wiki/banks/{name}.md`。生成时同样 Query 去重，新题 Ingest 回对应话题页。当前仅建 `wiki/banks/` 占位并在 SCHEMA 描述工作流，专用技能可后续再加。
+基于 `wiki/topics/*.md` 的知识体系 + 已登记题目（含参考答案），生成跨话题或单话题的大规模题库，归档到 `wiki/banks/{name}.md`。生成时同样 Query 去重，新题及其参考答案 Ingest 回对应话题页。当前仅建 `wiki/banks/` 占位并在 SCHEMA 描述工作流，专用技能可后续再加。
 
 ## 12. 决策记录
 
@@ -143,7 +155,9 @@ resume-agent/
 | 题库位置         | `wiki/banks/`（内化进 wiki）      | 符合「生成产物归档回 wiki」原则，可索引/反链/避免重复生成                    |
 | 历史回填         | 不回填                            | 用户决定，wiki 从空开始                                                     |
 | 检索工具         | 不用，仅整文件 Read/Grep          | 用户决定，md/纯文本够用，靠 index.md 导航                                   |
-| 题目登记形式     | 节（`### {ID}`）而非表格          | 便于长题目正文与追加                                                        |
+| 题目登记形式     | 节（`### {ID}`）而非表格          | 便于长题目正文、参考答案与追加                                              |
+| 参考答案存放     | wiki 话题页 `#### 参考答案`       | 权威来源统一在 wiki；生成时写入、评分时检索，避免临场生成不一致             |
+| 预生成答案可见性 | 不写入 question 文件              | 避免用户作答前看到答案；评分时再从 wiki 取回填入 evaluation                 |
 
 ## 13. 后续工作
 

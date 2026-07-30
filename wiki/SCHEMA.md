@@ -1,7 +1,7 @@
 # Wiki 规格
 
 > wiki 的结构、页面格式、ID 约定。LLM 维护 wiki 时严格遵循本规格。
-> 规则层见 `AGENTS.md`，操作步骤见 `opencode/.skills/wiki/SKILL.md`。
+> 规则层见 `AGENTS.md`，操作步骤见 `.opencode/.skills/wiki/SKILL.md`。
 
 ## 目录布局
 
@@ -42,6 +42,12 @@ question_count: 0
 - 题目：String/StringBuilder/StringBuffer 三者有什么区别？为什么 Java 把 String 设计成不可变？
 - 首次生成：2026-07-30 | 来源：question/2026-07-30-java基础-6617.md
 
+#### 参考答案
+（生成题目时同步写入的标准/参考答案；评分时优先从此处检索；评分/Lint 后可增量完善）
+- String 内部用 final char[]（JDK9+ byte[]）存储，不可变；StringBuilder 可变、非线程安全；StringBuffer 可变、线程安全（synchronized）。
+- 不可变原因：字符串常量池复用、线程安全、hashCode 缓存、防止安全类（如作为 HashMap key）被篡改。
+- ...
+
 ## 关联
 
 - 相关话题：[[java并发]]、[[jvm]]
@@ -51,7 +57,7 @@ question_count: 0
 
 - frontmatter：`topic`（显示名）/ `created` / `updated` / `question_count`（已登记题数）。
 - 知识体系：考点大纲，用于覆盖度检查与题库编排。
-- 题目登记：每题一节（`### {ID}`），含难度、考点、题目正文、首次生成日期、来源文件。
+- 题目登记：每题一节（`### {ID}`），含难度、考点、题目正文、首次生成日期、来源文件；节内 `#### 参考答案` 子节存放该题标准/参考答案（生成题目时同步写入，评分时优先检索，评分/Lint 后可增量完善）。
 - 关联：用 `[[话题名]]` 交叉链接。
 
 ## 题库页格式 `banks/{name}.md`
@@ -105,7 +111,7 @@ append-only。每条以 `## [yyyy-MM-dd] op | subject` 开头，`op ∈ {ingest,
 ```markdown
 ## [2026-07-30] ingest | Java 基础
 - 首次建立话题页 topics/java基础.md
-- 登记题目 8 道（java基础-001 ~ java基础-008）
+- 登记题目 8 道（java基础-001 ~ java基础-008，含参考答案）
 - 来源：question/2026-07-30-java基础-6617.md
 
 ## [2026-07-30] query | Java 基础
@@ -122,3 +128,4 @@ append-only。每条以 `## [yyyy-MM-dd] op | subject` 开头，`op ∈ {ingest,
 
 - 仅 md / 纯文本，整文件读写，不切分、不向量化。
 - 文件名含中文/空格时，工具调用注意加引号。
+- **参考答案的权威来源是 wiki 话题页**（`#### 参考答案`）：生成时写入，评分时优先检索，`question/*.md` 中 evaluation 区的 AI 参考答案为从 wiki 取回的副本。
