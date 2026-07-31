@@ -26,6 +26,8 @@
 
 源自 [Karpathy 的 LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)。核心：LLM 增量维护一个持久、可复利积累的 markdown 知识库，而非每次从原始文档临时检索。
 
+> 原文存档见 `docs/llm-wiki-original.md`（含三层架构、Ingest/Query/Lint 三操作、index/log 约定等原始信息），供跨会话参照。
+
 **三层：**
 
 - **Raw sources**：不可变来源，LLM 只读。
