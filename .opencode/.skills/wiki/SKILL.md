@@ -67,6 +67,24 @@ description: 面试题 wiki 知识库维护工具。当需要检索去重/检索
 
 幂等性：对同一来源文件重复 Ingest 时，按「来源 + 题目正文」判重，已存在则跳过，不产生重复条目。
 
+### 可选：从 raw/ 源材料 Ingest
+
+触发：用户将外部源材料（文章/笔记/PDF 转文本等）放入 `raw/` 并请求 Ingest 到某话题。此路径**可选**，不接入 topic-interviewer 强制流程。
+
+步骤：
+
+1. Read 指定的 `raw/{file}`（**只读，不得修改 raw 文件**）。
+2. 判定归属话题 {topic}；若 `wiki/topics/{topic}.md` 不存在则按前述步骤 1 创建（frontmatter + 由 raw 材料提炼的知识体系），存在则 Read 现有页。
+3. 提取 raw 材料中的考点，补充进「知识体系」大纲（去重，不重复已有考点）。此路径默认不产生新题目登记；若用户明确要求从中出题，则按常规 Ingest 续编 ID 并登记（含参考答案）。
+4. 在话题页相关考点处或「关联」区可注明来源 `raw/{file}`（便于溯源）。
+5. 追加 `wiki/log.md`：
+   ```
+   ## [yyyy-MM-dd] ingest | {topic} (from raw/{file})
+   - 从 raw/{file} 补充知识体系考点：xxx、yyy
+   ```
+6. 更新 `wiki/index.md` 话题行（更新时间/摘要，若 question_count 未变则不动题量）。
+7. `raw/` 不进 `wiki/index.md`（index 只索引 wiki 页）。
+
 ## 操作三：Lint（健康检查）
 
 触发：用户请求（如「lint wiki」「检查 wiki 健康度」）。

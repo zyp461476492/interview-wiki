@@ -15,7 +15,7 @@
 
 | 层             | 说明                       | 本项目对应                                                                              |
 | -------------- | -------------------------- | --------------------------------------------------------------------------------------- |
-| Raw sources    | 不可变来源，LLM 只读       | 互联网检索结果 + 练习会话 `question/*.md`（评分时写入 evaluation，AI 参考答案为 wiki 副本） |
+| Raw sources    | 不可变来源，LLM 只读       | `raw/`（用户策展的外部源材料：文章/笔记/PDF 转文本等）+ 互联网检索结果（临时，不落盘）+ 练习会话 `question/*.md`（交互记录，评分时写入 evaluation，AI 参考答案为 wiki 副本） |
 | Wiki           | LLM 维护的持久 markdown 库 | `wiki/`（话题页含知识体系+题目登记+参考答案 / 题库页 / 索引 / 日志）                    |
 | Schema         | 约定 / 工作流              | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `.opencode/.skills/wiki/SKILL.md`（操作） |
 
@@ -27,13 +27,15 @@ resume-agent/
 ├── ARCHITECTURE.md                 # 本文件：架构记录
 ├── docs/                           # 设计文档（跨会话执行用）
 │   └── wiki-design.md              # wiki 系统设计文档
+├── raw/                            # Raw sources 层：用户策展的不可变外部源材料（LLM 只读）
+│   └── README.md                   # 用途/只读约束/命名约定
 ├── wiki/                           # Wiki 层（LLM 生成维护）
 │   ├── SCHEMA.md                   # 规格：目录布局/页面格式/ID 约定
 │   ├── index.md                    # 内容索引（topics + banks）
 │   ├── log.md                      # append-only 操作日志
 │   ├── topics/                     # 话题页：知识体系 + 题目登记 + 参考答案
 │   └── banks/                      # 题库页：精选题集（归档回 wiki）
-├── question/                       # 练习会话（raw source / 交互记录，wiki 外）
+├── question/                       # 练习会话（交互记录，wiki 外）
 └── .opencode/.skills/
     ├── wiki/SKILL.md               # 三操作：Ingest / Query / Lint
     └── topic-interviewer/          # 面试题生成与评分
@@ -79,6 +81,8 @@ resume-agent/
 ```
 
 题库生成：读 `wiki/topics/*` + `wiki/banks/*` -> Query 去重 -> 生成精选题集（含参考答案）-> 归档到 `wiki/banks/{name}.md` + Ingest 新题回话题页。
+
+可选支线（raw 源材料 Ingest）：用户将外部源材料放入 `raw/` -> 告知 LLM Ingest 到 {topic} -> 读 raw 文件，提取考点补充进 `wiki/topics/{topic}.md`「知识体系」-> log 记 `ingest | {topic} (from raw/{file})`。此支线可选，不强制接入生成流程；`raw/` 不进 index，溯源靠 log 与话题页「来源」。
 
 ## 关键约束
 

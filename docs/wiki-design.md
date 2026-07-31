@@ -47,7 +47,7 @@
 
 | LLM Wiki 层  | 本项目对应                                                                          |
 | ------------ | ----------------------------------------------------------------------------------- |
-| Raw sources  | 互联网检索结果 + 练习会话 `question/*.md`（评分时写入 evaluation，AI 参考答案为 wiki 副本） |
+| Raw sources  | `raw/`（用户策展的外部源材料：文章/笔记/PDF 转文本等，LLM 只读）+ 互联网检索结果（临时，不落盘）+ 练习会话 `question/*.md`（交互记录，评分时写入 evaluation，AI 参考答案为 wiki 副本） |
 | Wiki         | `wiki/`（话题页含知识体系+题目登记+参考答案 / 题库页 / 索引 / 日志）                |
 | Schema       | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `.opencode/.skills/wiki/SKILL.md`（操作） |
 
@@ -55,7 +55,8 @@
 
 - 话题页（知识体系 + 题目登记 + 参考答案）：持久知识，去重与评分依据 -> `wiki/topics/`
 - 题库（精选题集）：生成产物，归档回 wiki -> `wiki/banks/`
-- 练习会话（题目+作答+评分）：个性化交互记录，ingest 的 raw source -> `question/`（wiki 外；不含预生成答案，避免用户作答前看到）
+- 外部源材料：用户策展的不可变来源（文章/笔记/PDF 转文本等），LLM 只读、按需 Ingest -> `raw/`（wiki 外）
+- 练习会话（题目+作答+评分）：个性化交互记录，题目登记的来源 -> `question/`（wiki 外；不含预生成答案，避免用户作答前看到）
 
 > 题库放进 wiki 而非独立目录，遵循 Karpathy「有价值的生成产物归档回 wiki 作为新页面」原则：题库是去个性化的可复用参考知识，应被 index 索引、被话题页反向链接、避免重复生成。
 
@@ -67,13 +68,15 @@ resume-agent/
 ├── ARCHITECTURE.md                 # 架构记录
 ├── docs/
 │   └── wiki-design.md              # 本文件
+├── raw/                            # Raw sources 层：用户策展的不可变外部源材料（LLM 只读）
+│   └── README.md                   # 用途/只读约束/命名约定
 ├── wiki/
 │   ├── SCHEMA.md                   # 规格：目录布局/页面格式/ID 约定
 │   ├── index.md                    # 内容索引（topics + banks）
 │   ├── log.md                      # append-only 操作日志
 │   ├── topics/                     # 话题页：知识体系 + 题目登记 + 参考答案
 │   └── banks/                      # 题库页：精选题集
-├── question/                       # 练习会话（raw source / 交互记录，wiki 外）
+├── question/                       # 练习会话（交互记录，wiki 外）
 └── .opencode/.skills/
     ├── wiki/SKILL.md               # 三操作：Ingest / Query / Lint
     └── topic-interviewer/
@@ -123,6 +126,7 @@ resume-agent/
 5. 评分后更新：若对某题参考答案有更优补充，更新该题 `#### 参考答案`，frontmatter `updated`=今日，log 注明「更新参考答案 {ID}」。
 6. 题库场景：新题 Ingest 回话题页（含参考答案），题库归档为 `wiki/banks/{name}.md`，更新 index 的 banks 表。
 7. 幂等：同来源重复 Ingest 按「来源 + 题目正文」判重，已存在则跳过。
+8. 可选「raw 源材料 Ingest」：用户将外部源材料放入 `raw/` 并请求 Ingest 到 {topic} 时，Read 该 raw 文件，提取考点补充进话题页「知识体系」（不强制产生题目），在 log 记 `## [date] ingest | {topic} (from raw/{file})`，话题页相关处可注明来源 `raw/{file}`。此路径可选，`raw/` 不进 index。
 
 ### 9.3 Lint（健康检查）
 
@@ -158,6 +162,7 @@ resume-agent/
 | 题目登记形式     | 节（`### {ID}`）而非表格          | 便于长题目正文、参考答案与追加                                              |
 | 参考答案存放     | wiki 话题页 `#### 参考答案`       | 权威来源统一在 wiki；生成时写入、评分时检索，避免临场生成不一致             |
 | 预生成答案可见性 | 不写入 question 文件              | 避免用户作答前看到答案；评分时再从 wiki 取回填入 evaluation                 |
+| Raw sources 层   | 新增 `raw/` 目录（用户源材料，只读） | 补齐 LLM Wiki 模式的 Raw sources 层；仅放用户策展的外部材料，可选接入 Ingest，不落盘联网搜索结果；`raw/` 不进 index，溯源靠 log |
 
 ## 13. 后续工作
 

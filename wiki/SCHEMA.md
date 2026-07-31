@@ -5,6 +5,8 @@
 
 ## 目录布局
 
+wiki 层（`wiki/`，LLM 生成维护）：
+
 ```
 wiki/
 ├── SCHEMA.md          # 本文件
@@ -15,6 +17,18 @@ wiki/
 └── banks/             # 题库页：精选题集
     └── {name}.md
 ```
+
+Raw sources 层（`raw/`，项目根下、wiki 外，LLM 只读不可变）：
+
+```
+raw/
+├── README.md          # 用途/只读约束/命名约定
+└── {话题或描述}-{slug}.md   # 用户策展的外部源材料（文章/笔记/PDF 转文本等）
+```
+
+- `raw/` 是 LLM Wiki 模式的 Raw sources 层：用户放入源材料，LLM 读取后 Ingest 进 wiki，但永不修改 raw 文件。
+- `raw/` 不进 `wiki/index.md`（index 只索引 wiki 页）；溯源靠 `wiki/log.md` 与话题页「来源」注明。
+- 详见 `raw/README.md` 与 `.opencode/.skills/wiki/SKILL.md` 的 Ingest 操作。
 
 ## 话题页格式 `topics/{topic}.md`
 
@@ -129,3 +143,4 @@ append-only。每条以 `## [yyyy-MM-dd] op | subject` 开头，`op ∈ {ingest,
 - 仅 md / 纯文本，整文件读写，不切分、不向量化。
 - 文件名含中文/空格时，工具调用注意加引号。
 - **参考答案的权威来源是 wiki 话题页**（`#### 参考答案`）：生成时写入，评分时优先检索，`question/*.md` 中 evaluation 区的 AI 参考答案为从 wiki 取回的副本。
+- **`raw/` 为只读源层**：LLM 读取其中文件用于 Ingest，但不得修改/删除；源材料不可变，更新请放入新文件。

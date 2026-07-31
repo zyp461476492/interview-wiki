@@ -13,6 +13,7 @@ description: 面试题生成与评分练习工具。当用户提供一个技术�
 2. **检索准备**：
    - **Query wiki（去重）**：先执行 wiki 的 Query 操作（见 `.opencode/.skills/wiki/SKILL.md`）--读 `wiki/index.md` 与 `wiki/topics/{topic}.md`，获取已登记题目与已覆盖考点。**未 Query 不生成。**
    - 通过互联网搜索补充收集该话题的核心概念、高频考点、常见易错点。
+   - 若用户提供了外部源材料（文章/笔记等），可让其放入 `raw/` 后执行 wiki 的「raw 源材料 Ingest」补充知识体系（可选，见 `.opencode/.skills/wiki/SKILL.md`）；本流程不强制依赖 raw。
 3. **生成题目与参考答案**：按照「生成规则」产出 8 道面试题，**并为每题同步生成参考答案**。**避开 wiki 中已登记的题目**（换角度/换问法），优先覆盖知识体系中尚未出题的考点。使用模板 `references/question-template.md` 格式，**仅将题目（不含参考答案）**保存到项目根目录下的 `question/{yyyy-MM-dd}-{topic}-{index}.md`（index 按「文件命名」规则确定），参考答案随下一步 Ingest 写入 wiki（避免用户作答前看到答案）。
 4. **回写登记（Ingest）**：生成完成后，执行 wiki 的 Ingest 操作--将本次 8 题**及其参考答案**登记进 `wiki/topics/{topic}.md`（不存在则创建，含知识体系大纲），更新 `wiki/index.md` 与 `wiki/log.md`。详见 `.opencode/.skills/wiki/SKILL.md`。**未 Ingest 视为流程未完成。**
 5. **通知用户**：告知用户题目文件路径，提示用户手动编辑该文件，在每题 `### A：` 下方填写自己的回答。
