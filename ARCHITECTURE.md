@@ -45,9 +45,9 @@ resume-agent/
 
 ## 三种操作
 
-- **Query（检索）**：两种模式。生成题目前用「去重模式」--读 `wiki/index.md` + `wiki/topics/{topic}.md`，输出已登记题目与已覆盖考点，生成时避开；评分前用「答案检索模式」--读话题页，按题取回已登记 `#### 参考答案` 作为评分基准。**未 Query 不生成。**
-- **Ingest（回写登记）**：生成/评分后调用。创建/更新话题页（知识体系 + 题目登记 + **参考答案**），更新 `wiki/index.md`，追加 `wiki/log.md`；评分后若对答案有更优补充则更新对应题参考答案。
-- **Lint（健康检查）**：用户请求时调用。检查重复/近似题、参考答案缺失、覆盖缺口、孤立页、索引不同步，报告并修复。
+- **Query（检索）**：两种模式。生成题目前用「去重模式」--读 `wiki/index.md` + `wiki/topics/{topic}.md` 的**题目索引表 + 知识体系**（不读详情），输出已登记题目与已覆盖考点，生成时避开；评分前用「答案检索模式」--Grep `^### {ID}` 定位题节后分段 Read 取回已登记 `#### 参考答案` 作为评分基准。**未 Query 不生成。**
+- **Ingest（回写登记）**：生成/评分后调用。创建/更新话题页（知识体系 + **题目索引表** + 题目登记 + **参考答案**），同步维护索引表与题目登记，更新 `wiki/index.md`，追加 `wiki/log.md`；评分后若对答案有更优补充则更新对应题参考答案。
+- **Lint（健康检查）**：用户请求时调用。检查重复/近似题、参考答案缺失、覆盖缺口、索引表与题目登记不同步、孤立页、索引不同步，报告并修复。
 
 详见 `.opencode/.skills/wiki/SKILL.md` 与 `docs/wiki-design.md`。
 
@@ -57,7 +57,7 @@ resume-agent/
 用户给话题
    │
    ▼
-[topic-interviewer] ──Query(去重)──> 读 wiki/topics + index ──> 已出题目/考点
+[topic-interviewer] ──Query(去重)──> 读 wiki/topics 索引表 + index ──> 已出题目/考点
    │                                                 │
    ▼                                                 │
 生成 N 题（默认 8）+ 参考答案（避开重复）<──────────────────────┘
@@ -65,13 +65,13 @@ resume-agent/
    ├──> 保存 question/{date}-{topic}-{index}.md（仅题目，不含答案；index 为该话题递增序号）
    │
    ▼
-[topic-interviewer] ──Ingest──> 写 wiki/topics（题目登记 + 参考答案）+ index + log
+[topic-interviewer] ──Ingest──> 写 wiki/topics（索引表 + 题目登记 + 参考答案）+ index + log
    │
    ▼
 通知用户作答 -> 用户作答
    │
    ▼
-[topic-interviewer] ──Query(检索答案)──> 读 wiki/topics ──> 已登记参考答案
+[topic-interviewer] ──Query(检索答案)──> Grep 定位 wiki/topics 题节 ──> 已登记参考答案
    │
    ▼
 评分（以 wiki 参考答案为基准）+ 写 evaluation 到 question 文件
@@ -88,6 +88,7 @@ resume-agent/
 
 - **仅处理整份 md / 纯文本文件**，使用 Read/Write/Edit/Grep/Glob，不引入文件切分、向量化、外部检索引擎。
 - 导航靠 `wiki/index.md`（中等规模 ~数百页内够用）。
+- **渐进式加载**：话题页内置「题目索引表」，去重 Query 只读索引表 + 知识体系，答案检索用 Grep 定位详情分段读，避免题目增多后全量加载。
 - 历史题目不回填，wiki 从空开始，只登记今后生成的题目。
 
 ## 改动同步约定

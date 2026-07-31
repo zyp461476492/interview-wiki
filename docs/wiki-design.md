@@ -90,7 +90,7 @@ resume-agent/
 
 详见 `wiki/SCHEMA.md`。要点：
 
-- **话题页** `topics/{topic}.md`：frontmatter（topic/created/updated/question_count）+ 知识体系（考点大纲）+ 题目登记（每题一节 `### {ID}`，含难度/考点/题目/首次生成/来源，节内 `#### 参考答案` 子节存标准答案）+ 关联（`[[话题]]` 链接）。
+- **话题页** `topics/{topic}.md`：frontmatter（topic/created/updated/question_count）+ 知识体系（考点大纲）+ **题目索引表**（`ID | 考点 | 难度 | 摘要`，轻量冗余摘要，用于渐进式加载）+ 题目登记（每题一节 `### {ID}`，含难度/考点/题目/首次生成/来源，节内 `#### 参考答案` 子节存标准答案）+ 关联（`[[话题]]` 链接）。去重 Query 只读索引表 + 知识体系，答案检索用 Grep 定位题节分段读，避免全量加载。
 - **题库页** `banks/{name}.md`：frontmatter（bank/size/created/topics）+ 说明 + 题目列表（每题注明难度/考点，引用已登记 ID 或新题）。
 - **index.md**：topics 表 + banks 表。
 - **log.md**：append-only，`## [yyyy-MM-dd] op | subject`。
@@ -109,31 +109,35 @@ resume-agent/
 
 **去重模式（生成题目前）：**
 
+> 渐进式加载：只读话题页上半部分（frontmatter + 知识体系 + 题目索引表），不读题目登记详情。
+
 1. Read `wiki/index.md`，判断 `wiki/topics/{topic}.md` 是否存在。
-2. 存在则 Read 它，提取题目登记全部条目（ID/考点/题目）与知识体系考点大纲；不存在则标记新话题。
-3. 输出 `{已出题目清单, 已覆盖考点, 未覆盖考点}`，生成时避开已出题、优先覆盖未覆盖考点。
+2. 存在则 Read 它的**开头至 `## 题目登记` 标题前**（即知识体系 + 题目索引表）；提取索引表全部条目（ID/考点/摘要）与知识体系考点大纲。不存在则标记新话题。
+3. 输出 `{已出题目清单（来自索引表）, 已覆盖考点, 未覆盖考点}`，生成时避开已出题、优先覆盖未覆盖考点。
 
 **答案检索模式（评分前）：**
 
-1. Read `wiki/topics/{topic}.md`（须已 Ingest）。
-2. 提取每题 `#### 参考答案`，按 ID/题目与待评分题目对齐。
+> 渐进式加载：用 Grep 定位目标题节后分段 Read，不必全量加载。
+
+1. Read `wiki/topics/{topic}.md` 的题目索引表（同去重模式，只读上半部分），按摘要/考点与待评分题目对齐，确定每题 ID。
+2. 对每题 Grep `^### {ID}` 定位行号 -> 分段 Read 取 `#### 参考答案`。
 3. 输出 `{题目 -> 参考答案}` 作为评分基准；wiki 缺失时才临场补充，评分后 Ingest 回填。
 
 ### 9.2 Ingest（回写登记）
 
-1. 话题页不存在 -> 创建（frontmatter + 由考点提炼的知识体系 + 题目登记，ID 从 `{topic}-001` 起；每题含 `#### 参考答案`）。
-2. 话题页存在 -> 续编 ID（`{topic}-{max+1}`），追加题目登记（含参考答案），更新 frontmatter（updated/question_count），补充新考点进知识体系。
+1. 话题页不存在 -> 创建（frontmatter + 由考点提炼的知识体系 + 题目索引表（N 行 `ID | 考点 | 难度 | 摘要`）+ 题目登记，ID 从 `{topic}-001` 起；每题含 `#### 参考答案`）。
+2. 话题页存在 -> 续编 ID（`{topic}-{max+1}`），在题目索引表追加 N 行、题目登记追加 N 题（含参考答案），更新 frontmatter（updated/question_count），补充新考点进知识体系。索引表与题目登记两处同步追加。
 3. 更新 `index.md` 话题行（题量/更新时间/摘要）。
 4. 追加 `log.md`：`## [date] ingest | {topic}` + 明细。
-5. 评分后更新：若对某题参考答案有更优补充，更新该题 `#### 参考答案`，frontmatter `updated`=今日，log 注明「更新参考答案 {ID}」。
-6. 题库场景：新题 Ingest 回话题页（含参考答案），题库归档为 `wiki/banks/{name}.md`，更新 index 的 banks 表。
+5. 评分后更新：若对某题参考答案有更优补充，更新该题 `#### 参考答案`（索引表不变），frontmatter `updated`=今日，log 注明「更新参考答案 {ID}」。
+6. 题库场景：新题 Ingest 回话题页（含参考答案 + 索引表），题库归档为 `wiki/banks/{name}.md`，更新 index 的 banks 表。
 7. 幂等：同来源重复 Ingest 按「来源 + 题目正文」判重，已存在则跳过。
 8. 可选「raw 源材料 Ingest」：用户将外部源材料放入 `raw/` 并请求 Ingest 到 {topic} 时，Read 该 raw 文件，提取考点补充进话题页「知识体系」（不强制产生题目），在 log 记 `## [date] ingest | {topic} (from raw/{file})`，话题页相关处可注明来源 `raw/{file}`。此路径可选，`raw/` 不进 index。
 
 ### 9.3 Lint（健康检查）
 
 1. Read `index.md` + Glob 读取全部 `topics/*.md`、`banks/*.md`。
-2. 检查：重复/近似题、参考答案缺失、覆盖缺口、孤立页、索引不同步、断链。
+2. 检查：重复/近似题、参考答案缺失、覆盖缺口、索引表与题目登记不同步、孤立页、索引不同步、断链。
 3. 输出报告 + 修复建议；经确认后修复，每项追加 `## [date] lint | ...` 到 log。
 
 ## 10. topic-interviewer 集成
@@ -165,6 +169,7 @@ resume-agent/
 | 参考答案存放     | wiki 话题页 `#### 参考答案`       | 权威来源统一在 wiki；生成时写入、评分时检索，避免临场生成不一致             |
 | 预生成答案可见性 | 不写入 question 文件              | 避免用户作答前看到答案；评分时再从 wiki 取回填入 evaluation                 |
 | Raw sources 层   | 新增 `raw/` 目录（用户源材料，只读） | 补齐 LLM Wiki 模式的 Raw sources 层；仅放用户策展的外部材料，可选接入 Ingest，不落盘联网搜索结果；`raw/` 不进 index，溯源靠 log |
+| 渐进式加载       | 话题页内置「题目索引表」（单文件，不拆详情页） | 题目增多后避免去重/答案检索全量加载：去重只读索引表 + 知识体系，答案检索用 Grep 定位详情分段读。不拆文件以符合「整文件读写、不切分」约束 |
 
 ## 13. 后续工作
 
