@@ -60,7 +60,7 @@ resume-agent/
 [topic-interviewer] ──Query(去重)──> 读 wiki/topics + index ──> 已出题目/考点
    │                                                 │
    ▼                                                 │
-生成 8 题 + 参考答案（避开重复）<──────────────────────┘
+生成 N 题（默认 8）+ 参考答案（避开重复）<──────────────────────┘
    │
    ├──> 保存 question/{date}-{topic}-{index}.md（仅题目，不含答案；index 为该话题递增序号）
    │
