@@ -1,4 +1,4 @@
-# resume-agent
+# interview-wiki
 
 基于 [LLM Wiki 模式](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 的面试题知识库与练习系统。LLM 增量维护一个持久 wiki（话题 + 题目 + 参考答案），用于生成去重、评分基准与题库编排；用户围绕 wiki 进行面试练习。
 
