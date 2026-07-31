@@ -2,20 +2,23 @@
 topic: Java 基础
 created: 2026-07-31
 updated: 2026-07-31
-question_count: 16
+question_count: 26
 ---
 
 # Java 基础
 
 ## 知识体系
 
-- 基础语法与类型（`==`/equals、hashCode 契约、八种基本类型、自动装箱/拆箱、包装类缓存）
+- 基础语法与类型（`==`/equals、hashCode 契约、八种基本类型、自动装箱/拆箱、包装类缓存、值传递/引用传递）
 - 核心类（String/StringBuilder/StringBuffer、String 不可变）
-- 面向对象（接口 vs 抽象类、OOP 设计思想、SOLID 原则）
-- 集合框架（HashMap 底层原理、数组+链表+红黑树、扩容机制、扰动函数）
+- 面向对象（接口 vs 抽象类、OOP 设计思想、SOLID 原则、内部类）
+- 对象创建与复制（对象创建方式、深拷贝/浅拷贝）
+- 集合框架（HashMap 底层原理、数组+链表+红黑树、扩容机制、扰动函数、ArrayList/LinkedList）
 - 泛型（类型擦除、泛型限制）
 - 异常体系（Checked/Unchecked Exception、异常选型设计）
-- 并发编程（synchronized/volatile、锁升级、JMM/happens-before、线程安全集合、ConcurrentHashMap、单例模式）
+- 核心机制（反射机制、注解机制、序列化机制）
+- 并发编程（synchronized/volatile、锁升级、JMM/happens-before、线程安全集合、ConcurrentHashMap、ThreadLocal、单例模式）
+- 新特性（Java 8 Stream API、Lambda、函数式编程）
 - JVM（类加载机制/双亲委派、Full GC 排查、OOM 排查）
 
 ## 题目索引
@@ -40,6 +43,16 @@ question_count: 16
 | java基础-014 | OOM 排查 | 进阶 | OOM 类型判别、排查思路与工具 |
 | java基础-015 | 线程安全集合/ConcurrentHashMap | 进阶 | 线程安全集合、读多写少 Map 选型与底层机制 |
 | java基础-016 | OOP/SOLID | 进阶 | 面向对象思想、SOLID 原则与项目案例 |
+| java基础-017 | ArrayList/LinkedList | 进阶 | 底层数组vs链表、增删改查性能对比与场景选型 |
+| java基础-018 | 值传递/引用传递 | 基础 | Java 只有值传递、对象属性修改可见性分析 |
+| java基础-019 | 反射机制 | 进阶 | 反射能力、应用场景、性能问题与优化 |
+| java基础-020 | 序列化机制 | 进阶 | Serializable、serialVersionUID、transient、安全问题 |
+| java基础-021 | 深拷贝/浅拷贝 | 进阶 | 区别与实现方式（clone/序列化）对比 |
+| java基础-022 | Stream API/Lambda | 进阶 | map/filter/reduce/collect、短路操作、懒加载 |
+| java基础-023 | ThreadLocal | 进阶 | 原理、内存泄漏、清理、InheritableThreadLocal |
+| java基础-024 | 对象创建方式 | 基础 | new/反射/clone/反序列化/Unsafe 是否调用构造方法 |
+| java基础-025 | 内部类 | 基础 | 四种内部类特点与场景、匿名内部类访问 final |
+| java基础-026 | 注解机制 | 进阶 | 元注解含义、自定义注解与反射读取 |
 
 ## 题目登记
 
@@ -298,6 +311,169 @@ question_count: 16
 - **案例示例**：
   - 订单促销系统：将"计算折扣"抽象为 `DiscountStrategy` 接口（开闭原则 + 单一职责），新增"满减""打折""优惠券"策略只需新增实现类，无需修改 `OrderService`；通过 `DiscountStrategyFactory` 依赖接口注入（依赖倒置），便于单元测试替换 Mock。
   - 效果：新增促销规则不影响核心下单流程，可测试性强，符合开闭原则。
+
+### java基础-017
+- 难度：进阶 | 考点：ArrayList/LinkedList、List 实现
+- 题目：`ArrayList` 和 `LinkedList` 有什么区别？请从底层数据结构、增删改查性能、内存占用、应用场景等方面进行对比。为什么说 `ArrayList` 的随机访问是 O(1) 而 `LinkedList` 是 O(n)？
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **底层数据结构**：`ArrayList` 基于动态数组（`Object[]`），`LinkedList` 基于双向链表（`Node` 有 prev/next 指针）。
+- **随机访问性能**：
+  - `ArrayList.get(i)` 直接通过数组下标访问，O(1)；`LinkedList.get(i)` 需从表头/表尾遍历到第 i 个节点，O(n)。
+  - 这就是 ArrayList 随机访问 O(1)、LinkedList O(n) 的原因：数组支持随机寻址，链表只能顺序遍历。
+- **增删性能**：
+  - `ArrayList` 尾部插入均摊 O(1)，中间插入/删除需移动元素 O(n)；`LinkedList` 在已知节点处插入/删除 O(1)（但定位节点仍 O(n)）。
+- **内存占用**：`ArrayList` 连续内存、空间紧凑；`LinkedList` 每个节点额外存储前驱/后继指针，内存开销更大，且内存不连续缓存不友好。
+- **应用场景**：读多写少、随机访问多 -> `ArrayList`（实际开发默认选择）；频繁在头尾插入删除、且无需随机访问 -> `LinkedList`（如实现队列/双端队列，但实践中 `ArrayDeque` 通常更优）。
+
+### java基础-018
+- 难度：基础 | 考点：值传递/引用传递
+- 题目：Java 是「值传递」还是「引用传递」？请结合代码示例说明：当一个对象作为参数传入方法后，方法内部修改该对象的属性，外部是否可见？如果方法内部让该参数引用指向一个新对象，外部会受影响吗？为什么？
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **Java 只有值传递**：方法参数传递的是实参的「副本」。基本类型传值的副本，引用类型传引用（地址）的副本。
+- **修改对象属性可见**：传入对象后，方法内通过该引用修改对象属性，外部可见--因为方法内的引用副本与外部引用指向**同一个对象**。
+- **重新指向新对象不影响外部**：方法内让参数引用指向新对象（`param = new Object()`），只改变了副本的指向，外部引用仍指向原对象，不受影响。
+- 示例：
+  ```java
+  void modify(User u) { u.setName("b"); }      // 外部可见，u 副本与原引用同对象
+  void reassign(User u) { u = new User("c"); }  // 外部不可见，仅副本改指向
+  ```
+- 结论：Java 的引用类型传的是「引用的值（地址）的副本」，本质是值传递，不存在让方法内改动直接作用到外部引用本身的引用传递。
+
+### java基础-019
+- 难度：进阶 | 考点：反射机制
+- 题目：什么是 Java 的反射机制？它能在运行时做哪些事情？反射有哪些典型应用场景？反射的性能问题主要出在哪里，有哪些优化手段？
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **反射机制**：程序在运行期动态获取类信息、构造对象、调用方法、访问字段的能力，核心入口是 `Class` 对象。
+- **运行时能力**：`Class.forName` 加载类；`getDeclaredMethods/Fields/Constructors` 获取成员；`Constructor.newInstance` 创建实例；`Method.invoke` 调用方法；`Field.set/get` 访问字段（含 private，需 `setAccessible(true)`）。
+- **典型应用场景**：Spring IoC（按类名实例化 Bean、依赖注入）、ORM/MyBatis（结果集映射到实体）、JDBC 驱动加载、JSON 序列化框架、动态代理、注解处理。
+- **性能问题来源**：方法查找需遍历校验、参数类型匹配与装箱、`Method.invoke` 需做访问权限检查、JIT 难以内联（多态分发）、每次可能产生临时对象。
+- **优化手段**：
+  1. 缓存 `Class`/`Method`/`Field` 对象，避免重复查找。
+  2. `setAccessible(true)` 跳过访问检查。
+  3. 高频场景用 `MethodHandle` 或 `LambdaMetafactory` 生成调用器（接近直接调用性能）。
+  4. 框架层用 ASM/CGLIB 生成字节码替代反射。
+
+### java基础-020
+- 难度：进阶 | 考点：序列化机制、Serializable
+- 题目：什么是 Java 对象的序列化与反序列化？`Serializable` 接口的作用是什么？`serialVersionUID` 有什么用？请说明 `transient` 关键字的作用，以及序列化可能带来的安全问题。
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **序列化/反序列化**：将对象转为字节序列（便于存储/网络传输），以及从字节序列恢复对象。
+- **`Serializable` 作用**：标记接口（无方法），实现后表示该类可被 `ObjectOutputStream`/`ObjectInputStream` 序列化；未实现会抛 `NotSerializableException`。
+- **`serialVersionUID`**：序列化版本号。反序列化时 JVM 会比对字节流中的 UID 与本地类 UID，不一致抛 `InvalidClassException`。显式声明可保证类兼容演变（增删字段不报错，缺失字段给默认值）；不声明则编译器按类结构自动生成，类一改就变，导致反序列化失败。
+- **`transient`**：修饰字段表示该字段不参与默认序列化（如敏感密码、临时缓存），反序列化后为默认值（null/0）。
+- **安全问题**：
+  1. 反序列化会调用 `readObject` 等方法，攻击者可构造恶意字节流触发任意类的方法（反序列化漏洞，如 commons-collections 链），导致 RCE。
+  2. 不要反序列化不可信来源的数据；用白名单过滤（`ObjectInputFilter`，JDK 9+）。
+  3. 敏感字段应 `transient` 或加密；推荐用 JSON 等跨语言、可控格式替代 Java 原生序列化。
+
+### java基础-021
+- 难度：进阶 | 考点：深拷贝/浅拷贝
+- 题目：请解释 Java 中「深拷贝（Deep Copy）」和「浅拷贝（Shallow Copy）」的区别。如何实现深拷贝？请至少给出两种实现方式并对比其优缺点。
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **浅拷贝**：复制对象本身，但引用类型字段仍指向被拷贝对象的同一实例（共享内部对象）。`Object.clone()` 默认是浅拷贝。
+- **深拷贝**：递归复制对象及其所有引用指向的对象，拷贝后两个对象图完全独立，互不影响。
+- **实现方式一：手动 `clone()` 递归拷贝**
+  - 实现 `Cloneable`，重写 `clone()`，对引用字段再调用其 `clone()`。
+  - 优点：可控、性能较好；缺点：代码繁琐，多层嵌套易漏，引用类型需都支持 clone。
+- **实现方式二：序列化/反序列化**
+  - 对象实现 `Serializable`，先序列化为字节再反序列化出新对象。
+  - 优点：通用、一行递归拷贝整个对象图；缺点：性能差（IO 开销）、所有相关类必须实现 Serializable。
+- **其他方式**：第三方库（如 Jackson 序列化为 JSON 再读回，Gson，Apache Commons `SerializationUtils.clone()`）；或拷贝构造方法/工厂方法手动 new。
+- 对比：手动 clone 性能好但维护成本高；序列化通用但慢且有安全/兼容限制。
+
+### java基础-022
+- 难度：进阶 | 考点：Stream API、Lambda、函数式编程
+- 题目：请说明 Java 8 引入的 `Stream API` 和 `Lambda` 表达式。`map`、`filter`、`reduce`、`collect` 等操作的区别是什么？什么是「短路操作」？请说明 Stream 的「懒加载（lazy）」特性是如何提升性能的。
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **Lambda**：简洁地表示函数式接口（仅一个抽象方法）的实例，语法 `(params) -> body`，配合 Stream 用于传递行为。
+- **Stream API**：对集合的声明式、可链式、可并行数据处理流水线，分中间操作与终端操作。
+- **操作区别**：
+  - `map`：一对一映射转换元素（`Stream<R> map(Function<T,R>)`）。
+  - `filter`：按条件过滤保留元素。
+  - `reduce`：归约，将流聚合为一个值（如求和、求积）。
+  - `collect`：终端操作，将流收集为集合/Map/字符串等（`Collectors.toList/groupingBy/joining`）。
+- **中间操作 vs 终端操作**：`map/filter/sorted` 是中间操作（返回 Stream，不触发计算）；`collect/reduce/forEach/count` 是终端操作（触发整条流水线执行）。
+- **短路操作**：不需要处理完所有元素即可得出结果的操作。如 `limit(n)`、`findFirst()`、`anyMatch()`--找到即停。
+- **懒加载提升性能**：中间操作不会立即执行，只有遇到终端操作才一次性「融合」执行，且可结合短路避免全量遍历。例如 `list.stream().filter(x->x>0).findFirst()` 只需处理到第一个正数即停，不遍历整个列表。这种延迟计算 + 短路融合显著减少无谓计算。
+
+### java基础-023
+- 难度：进阶 | 考点：ThreadLocal、内存泄漏
+- 题目：请说明 `ThreadLocal` 的作用与实现原理。为什么 `ThreadLocal` 可能导致内存泄漏？应如何正确使用与清理？`InheritableThreadLocal` 与 `ThreadLocal` 有何区别？
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **作用**：为每个线程提供变量的独立副本，实现线程间数据隔离，避免共享竞争（典型场景：用户上下文、数据库连接、SimpleDateFormat 线程安全）。
+- **实现原理**：每个 `Thread` 持有一个 `ThreadLocalMap`，key 是 `ThreadLocal` 实例（弱引用），value 是该线程的副本值。`ThreadLocal.set/get` 实际操作的是当前线程的 `ThreadLocalMap`。
+- **内存泄漏原因**：key 是弱引用，`ThreadLocal` 实例无强引用时 key 被回收变为 null；但 value 是强引用，且 `ThreadLocalMap` 的 Entry 生命周期与线程相同。线程长期存活（如线程池复用）时，key=null 的 Entry 的 value 无法回收，导致泄漏。
+- **正确使用与清理**：用完务必在 `finally` 中调用 `remove()` 清除当前线程的副本；用 `try-finally` 包裹 `set/get`。
+- **`InheritableThreadLocal` 区别**：子线程可以访问父线程创建时设置的值（父线程的 `InheritableThreadLocal` 值会在子线程 `Thread` 初始化时复制过来）。普通 `ThreadLocal` 子线程取不到父线程的值。
+  - 局限：仅在线程「创建时」复制，线程池复用线程时不会再次复制，需用阿里 TransmittableThreadLocal 解决。
+
+### java基础-024
+- 难度：基础 | 考点：对象创建方式、反射、反序列化
+- 题目：Java 中创建对象有哪几种方式？请分别说明 `new`、反射、`clone()`、反序列化、`Unsafe.allocateInstance()` 等方式的区别，以及它们是否调用构造方法。
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **`new`**：最常用，在堆上分配并调用构造方法初始化。
+- **反射 `Class.newInstance()` / `Constructor.newInstance()`**：运行时按类名创建实例，调用对应构造方法。`Class.newInstance()`（已废弃）只能调无参构造且需可访问；`Constructor.newInstance()` 更灵活，可调有参构造。
+- **`clone()`**：实现 `Cloneable` 接口，调用 `Object.clone()` 复制对象，**不调用构造方法**，是内存拷贝。
+- **反序列化**：通过 `ObjectInputStream` 从字节流恢复对象，**不调用构造方法**（但要求类实现 `Serializable`）。
+- **`Unsafe.allocateInstance()`**：直接分配内存创建对象，**不调用构造方法**，也不执行初始化（字段为默认值），属于底层危险 API。
+- 是否调用构造方法汇总：`new` 调用、反射调用、`clone` 不调用、反序列化不调用、`Unsafe` 不调用。
+
+### java基础-025
+- 难度：基础 | 考点：内部类
+- 题目：Java 中的内部类有哪几种（静态内部类、成员内部类、局部内部类、匿名内部类）？它们各自的特点与使用场景是什么？为什么匿名内部类只能访问 `final`（或 effectively final）的局部变量？
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **静态内部类（static nested）**：用 `static` 修饰，不依赖外部类实例，只能访问外部类静态成员。使用最广（如 `HashMap.Node`、Builder 模式），可独立实例化。
+- **成员内部类**：无 static，持有外部类实例引用，可访问外部类所有成员。实例化需先有外部实例 `outer.new Inner()`。
+- **局部内部类**：定义在方法/代码块内，作用域限于方法，可访问方法内 final 变量。使用较少。
+- **匿名内部类**：没有名字，直接 `new 父类/接口(){...}`，常用于回调、事件监听、`Comparator` 等。Java 8 后多用 Lambda 替代函数式接口的匿名内部类。
+- **只能访问 final（effectively final）局部变量的原因**：局部内部类/匿名内部类的对象生命周期可能超出方法栈（如被异步持有），而局部变量随方法栈销毁。编译器实际是将用到的局部变量**拷贝**一份到内部类中，为保证拷贝与原变量始终一致，必须要求变量不可变（final）。effectively final 指虽未显式写 final 但从未被重新赋值，Java 8+ 视同 final。
+
+### java基础-026
+- 难度：进阶 | 考点：注解机制、元注解、自定义注解
+- 题目：请说明 Java 注解（Annotation）的工作机制。常见的元注解（`@Retention`、`@Target`、`@Inherited`、`@Documented`、`@Repeatable`）分别是什么含义？如何自定义一个注解并在运行时通过反射读取它？
+- 首次生成：2026-07-31 | 来源：question/2026-07-31-java基础-3.md
+
+#### 参考答案
+- **注解机制**：注解是附加在类/方法/字段上的元数据标记，本身不执行逻辑，需由编译器（如 `@Override`）、工具（如 Lint）或运行时反射/字节码增强（如 Spring、MyBatis）读取并处理。
+- **元注解含义**：
+  - `@Retention`：保留策略，`SOURCE`（仅源码，编译丢弃，如 `@Override`）、`CLASS`（保留到 class 文件，默认，运行时不加载）、`RUNTIME`（运行时可反射读取）。
+  - `@Target`：可标注的目标，如 `TYPE/METHOD/FIELD/PARAMETER` 等。
+  - `@Inherited`：子类是否继承父类的注解（仅对类有效）。
+  - `@Documented`：是否出现在 Javadoc 中。
+  - `@Repeatable`：是否可重复标注（需配合容器注解，Java 8+）。
+- **自定义注解 + 反射读取示例**：
+  ```java
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  public @interface MyAnno { String value() default ""; }
+
+  // 反射读取
+  Method m = obj.getClass().getMethod("doIt");
+  if (m.isAnnotationPresent(MyAnno.class)) {
+      MyAnno a = m.getAnnotation(MyAnno.class);
+      String v = a.value(); // 读取注解属性
+  }
+  ```
+  - 只有 `@Retention(RUNTIME)` 的注解才能在运行时通过 `getAnnotation`/`getDeclaredAnnotation` 读取。
+  - 典型应用：Spring `@Component`/`@RequestMapping`、JUnit `@Test`、自定义权限校验 `@RequiresLogin`。
 
 ## 关联
 
