@@ -1,7 +1,7 @@
 # Wiki 规格
 
 > wiki 的结构、页面格式、ID 约定。LLM 维护 wiki 时严格遵循本规格。
-> 规则层见 `AGENTS.md`，操作步骤见 `.opencode/.skills/wiki/SKILL.md`。
+> 规则层见 `AGENTS.md`，操作步骤见 `.opencode/skills/wiki/SKILL.md`。
 
 ## 目录布局
 
@@ -28,7 +28,7 @@ raw/
 
 - `raw/` 是 LLM Wiki 模式的 Raw sources 层：用户放入源材料，LLM 读取后 Ingest 进 wiki，但永不修改 raw 文件。
 - `raw/` 不进 `wiki/index.md`（index 只索引 wiki 页）；溯源靠 `wiki/log.md` 与话题页「来源」注明。
-- 详见 `raw/README.md` 与 `.opencode/.skills/wiki/SKILL.md` 的 Ingest 操作。
+- 详见 `raw/README.md` 与 `.opencode/skills/wiki/SKILL.md` 的 Ingest 操作。
 
 ## 话题页格式 `topics/{topic}.md`
 
@@ -37,7 +37,7 @@ raw/
 topic: Java 基础
 created: 2026-07-30
 updated: 2026-07-30
-question_count: 0
+question_count: 2
 ---
 
 # Java 基础
@@ -82,7 +82,7 @@ question_count: 0
 - 知识体系：考点大纲，用于覆盖度检查与题库编排。
 - 题目索引：一题一行的轻量表（`ID | 考点 | 难度 | 摘要`），是对题目登记的冗余摘要。用于渐进式加载--去重 Query 只读本表 + 知识体系（文件上半部分），无需读详情；Ingest 新增题时同步追加一行。摘要为一句话题目概述，便于快速判断是否重复角度。
 - 题目登记：每题一节（`### {ID}`），含难度、考点、题目正文、首次生成日期、来源文件；节内 `#### 参考答案` 子节存放该题标准/参考答案（生成题目时同步写入，评分时优先检索，评分/Lint 后可增量完善）。答案检索时用 Grep `^### {ID}` 定位后分段 Read，不必全量加载。
-- 关联：用 `[[话题名]]` 交叉链接。
+- 关联：用 `[[话题名]]` 交叉链接；只链接已存在的话题页，新话题建立时再补链（避免断链）。
 
 ## 题库页格式 `banks/{name}.md`
 
@@ -132,6 +132,8 @@ topics: [java并发, jvm, java集合]
 
 append-only。每条以 `## [yyyy-MM-dd] op | subject` 开头，`op ∈ {ingest, query, lint}`。
 
+> 记日志约定：Ingest / Lint 每次必记；**Query 默认不记**，仅当去重 Query 的结果显著影响生成决策（如避开大量已出题、调整选题方向）时可记一条。
+
 ```markdown
 ## [2026-07-30] ingest | Java 基础
 - 首次建立话题页 topics/java基础.md
@@ -154,4 +156,5 @@ append-only。每条以 `## [yyyy-MM-dd] op | subject` 开头，`op ∈ {ingest,
 - 文件名含中文/空格时，工具调用注意加引号。
 - **渐进式加载**：话题页「题目索引」表与「题目登记」详情须保持同步（题数/ID/考点一致）；Ingest 新增题时两处同步追加，Lint 时校验一致性。去重 Query 只读索引表 + 知识体系，答案检索用 Grep 定位详情，避免全量加载。
 - **参考答案的权威来源是 wiki 话题页**（`#### 参考答案`）：生成时写入，评分时优先检索，`question/*.md` 中 evaluation 区的 AI 参考答案为从 wiki 取回的副本。
+- **题目 ID 锚点**：`question/*.md` 每题 `## Q` 标题下须含隐藏注释 `<!-- id: {topic}-NNN -->`，与话题页登记 ID 一一对应。生成时由话题页当前最大序号预分配，Ingest 使用同一批 ID；评分时按锚点精确检索参考答案（无锚点的旧文件回退为按摘要/考点对齐）。锚点不是答案，不违反「question 文件不含答案」约束。
 - **`raw/` 为只读源层**：LLM 读取其中文件用于 Ingest，但不得修改/删除；源材料不可变，更新请放入新文件。

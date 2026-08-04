@@ -11,15 +11,17 @@ description: 面试题生成与评分练习工具。当用户提供一个技术�
 
 1. **接收话题**：用户提供一个技术话题（如「Java 泛型」「Redis 持久化」「MySQL 索引」等）。若用户同时指定了题目数量（如「生成 10 道」「出 5 题」），记为 N；未指定则 N = 8（默认）。
 2. **检索准备**：
-   - **Query wiki（去重）**：先执行 wiki 的 Query 操作（见 `.opencode/.skills/wiki/SKILL.md`）--读 `wiki/index.md` 与 `wiki/topics/{topic}.md`，获取已登记题目与已覆盖考点。**未 Query 不生成。**
+   - **Query wiki（去重）**：先执行 wiki 的 Query 操作（见 `.opencode/skills/wiki/SKILL.md`）--读 `wiki/index.md` 与 `wiki/topics/{topic}.md`，获取已登记题目与已覆盖考点。**未 Query 不生成。**
    - 通过互联网搜索补充收集该话题的核心概念、高频考点、常见易错点。
-   - 若用户提供了外部源材料（文章/笔记等），可让其放入 `raw/` 后执行 wiki 的「raw 源材料 Ingest」补充知识体系（可选，见 `.opencode/.skills/wiki/SKILL.md`）；本流程不强制依赖 raw。
-3. **生成题目与参考答案**：按照「生成规则」产出 N 道面试题（默认 8 道，N 为用户指定数量），**并为每题同步生成参考答案**。**避开 wiki 中已登记的题目**（换角度/换问法），优先覆盖知识体系中尚未出题的考点。使用模板 `references/question-template.md` 格式，**仅将题目（不含参考答案）**保存到项目根目录下的 `question/{yyyy-MM-dd}-{topic}-{index}.md`（index 按「文件命名」规则确定），参考答案随下一步 Ingest 写入 wiki（避免用户作答前看到答案）。
-4. **回写登记（Ingest）**：生成完成后，执行 wiki 的 Ingest 操作--将本次 N 题**及其参考答案**登记进 `wiki/topics/{topic}.md`（不存在则创建，含知识体系大纲），更新 `wiki/index.md` 与 `wiki/log.md`。详见 `.opencode/.skills/wiki/SKILL.md`。**未 Ingest 视为流程未完成。**
+   - 若用户提供了外部源材料（文章/笔记等），可让其放入 `raw/` 后执行 wiki 的「raw 源材料 Ingest」补充知识体系（可选，见 `.opencode/skills/wiki/SKILL.md`）；本流程不强制依赖 raw。
+3. **生成题目与参考答案**：按照「生成规则」产出 N 道面试题（默认 8 道，N 为用户指定数量），**并为每题同步生成参考答案**。**避开 wiki 中已登记的题目**（换角度/换问法），优先覆盖知识体系中尚未出题的考点。
+   - **预分配题目 ID**：根据 Query 取回的话题页题目索引表，取当前最大序号 max，本批 N 题 ID 预分配为 `{topic}-(max+1)` ~ `{topic}-(max+N)`（新话题从 `{topic}-001` 起）。
+   - 使用模板 `references/question-template.md` 格式，**仅将题目（不含参考答案）**保存到项目根目录下的 `question/{yyyy-MM-dd}-{topic}-{index}.md`（index 按「文件命名」规则确定），并在每题 `## Q` 标题下写入 `<!-- id: {预分配ID} -->` 隐藏锚点（非答案，供评分时精确检索）；参考答案随下一步 Ingest 写入 wiki（避免用户作答前看到答案）。
+4. **回写登记（Ingest）**：生成完成后，执行 wiki 的 Ingest 操作--将本次 N 题**及其参考答案**登记进 `wiki/topics/{topic}.md`（不存在则创建，含知识体系大纲），**登记 ID 必须使用上一步预分配的同一批 ID**（与 question 文件锚点一一对应），更新 `wiki/index.md` 与 `wiki/log.md`。详见 `.opencode/skills/wiki/SKILL.md`。**未 Ingest 视为流程未完成。**
 5. **通知用户**：告知用户题目文件路径，提示用户手动编辑该文件，在每题 `### A：` 下方填写自己的回答。
 6. **等待作答**：用户完成作答后，在对话中回复「完成」（或其他明确表示完成的消息）。
 7. **评分反馈**：
-   - **Query wiki（检索答案）**：读 `wiki/topics/{topic}.md`，按题目匹配已登记的 `#### 参考答案`，作为评分基准（优先于临场生成）；详见 `.opencode/.skills/wiki/SKILL.md` 答案检索模式。
+   - **Query wiki（检索答案）**：先读 question 文件中每题的 `<!-- id: {ID} -->` 锚点，按 ID 在 `wiki/topics/{topic}.md` 中 Grep 定位题节取回已登记的 `#### 参考答案` 作为评分基准（优先于临场生成）；旧文件无锚点时回退为按题目文本/摘要/考点对齐匹配。详见 `.opencode/skills/wiki/SKILL.md` 答案检索模式。
    - 读取用户填写的答案文件，按照「评分规则」逐题打分，在文件中补充每题的 `### evaluation` 部分（含得分、点评、AI 参考答案--**取自 wiki 已登记答案**，必要时补充），并在对话中汇总总成绩。
    - 若评分中对某题答案有更优/更全的补充，执行 Ingest 更新 wiki 中该题参考答案，保持 wiki 为权威来源。
 

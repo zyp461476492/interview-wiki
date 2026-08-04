@@ -38,4 +38,4 @@ raw/
 3. LLM 执行 wiki 的 Ingest：读取 raw 文件 -> 提取考点补充进 `wiki/topics/{topic}.md` 的「知识体系」-> 在 `wiki/log.md` 记 `## [yyyy-MM-dd] ingest | {topic} (from raw/{file})`。
 4. 溯源：话题页「知识体系」或相关条目可注明来源 `raw/{file}`；`raw/` 本身不进 `wiki/index.md`（index 只索引 wiki 页，raw 是源层）。
 
-详见 `.opencode/.skills/wiki/SKILL.md` 的 Ingest 操作。
+详见 `.opencode/skills/wiki/SKILL.md` 的 Ingest 操作。

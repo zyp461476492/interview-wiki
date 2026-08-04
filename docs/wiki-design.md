@@ -51,7 +51,7 @@
 | ------------ | ----------------------------------------------------------------------------------- |
 | Raw sources  | `raw/`（用户策展的外部源材料：文章/笔记/PDF 转文本等，LLM 只读）+ 互联网检索结果（临时，不落盘）+ 练习会话 `question/*.md`（交互记录，评分时写入 evaluation，AI 参考答案为 wiki 副本） |
 | Wiki         | `wiki/`（话题页含知识体系+题目登记+参考答案 / 题库页 / 索引 / 日志）                |
-| Schema       | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `.opencode/.skills/wiki/SKILL.md`（操作） |
+| Schema       | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `.opencode/skills/wiki/SKILL.md`（操作） |
 
 **产物归属：**
 
@@ -79,11 +79,12 @@ resume-agent/
 │   ├── topics/                     # 话题页：知识体系 + 题目登记 + 参考答案
 │   └── banks/                      # 题库页：精选题集
 ├── question/                       # 练习会话（交互记录，wiki 外）
-└── .opencode/.skills/
+└── .opencode/skills/
     ├── wiki/SKILL.md               # 三操作：Ingest / Query / Lint
-    └── topic-interviewer/
-        ├── SKILL.md                # 接入 Query/Ingest
-        └── references/question-template.md
+    ├── topic-interviewer/
+    │   ├── SKILL.md                # 接入 Query/Ingest
+    │   └── references/question-template.md
+    └── bank-generator/SKILL.md     # 题库生成（选题+补新题+归档 banks）
 ```
 
 ## 7. 页面格式
@@ -113,20 +114,22 @@ resume-agent/
 
 1. Read `wiki/index.md`，判断 `wiki/topics/{topic}.md` 是否存在。
 2. 存在则 Read 它的**开头至 `## 题目登记` 标题前**（即知识体系 + 题目索引表）；提取索引表全部条目（ID/考点/摘要）与知识体系考点大纲。不存在则标记新话题。
-3. 输出 `{已出题目清单（来自索引表）, 已覆盖考点, 未覆盖考点}`，生成时避开已出题、优先覆盖未覆盖考点。
+3. **跨话题去重**：再读话题页「关联」区 `[[话题]]` 链接，对其中已存在的关联话题页同样只读其题目索引表，纳入避重范围。
+4. 输出 `{已出题目清单（来自索引表）, 关联话题已出题目清单, 已覆盖考点, 未覆盖考点, 当前最大题目序号}`，生成时避开已出题、优先覆盖未覆盖考点，并按最大序号预分配本批题目 ID（写入 question 文件锚点）。
 
 **答案检索模式（评分前）：**
 
 > 渐进式加载：用 Grep 定位目标题节后分段 Read，不必全量加载。
 
-1. Read `wiki/topics/{topic}.md` 的题目索引表（同去重模式，只读上半部分），按摘要/考点与待评分题目对齐，确定每题 ID。
-2. 对每题 Grep `^### {ID}` 定位行号 -> 分段 Read 取 `#### 参考答案`。
-3. 输出 `{题目 -> 参考答案}` 作为评分基准；wiki 缺失时才临场补充，评分后 Ingest 回填。
+1. Read `wiki/topics/{topic}.md` 的题目索引表（同去重模式，只读上半部分）。
+2. **确定每题 ID（优先锚点）**：从待评分 question 文件提取每题 `<!-- id: {ID} -->` 隐藏锚点；无锚点的旧文件回退为按摘要/考点对齐。
+3. 对每题 Grep `^### {ID}` 定位行号 -> 分段 Read 取 `#### 参考答案`。
+4. 输出 `{题目 -> 参考答案}` 作为评分基准；wiki 缺失时才临场补充，评分后 Ingest 回填。
 
 ### 9.2 Ingest（回写登记）
 
 1. 话题页不存在 -> 创建（frontmatter + 由考点提炼的知识体系 + 题目索引表（N 行 `ID | 考点 | 难度 | 摘要`）+ 题目登记，ID 从 `{topic}-001` 起；每题含 `#### 参考答案`）。
-2. 话题页存在 -> 续编 ID（`{topic}-{max+1}`），在题目索引表追加 N 行、题目登记追加 N 题（含参考答案），更新 frontmatter（updated/question_count），补充新考点进知识体系。索引表与题目登记两处同步追加。
+2. 话题页存在 -> 续编 ID（`{topic}-{max+1}`；若生成环节已预分配 ID 则用同一批，与 question 文件锚点一致），在题目索引表追加 N 行、题目登记追加 N 题（含参考答案），更新 frontmatter（updated/question_count），补充新考点进知识体系；若新题考点与其他已存在话题页明显重叠，双方「关联」区互加 `[[话题]]` 链接（只链已存在页）。索引表与题目登记两处同步追加。
 3. 更新 `index.md` 话题行（题量/更新时间/摘要）。
 4. 追加 `log.md`：`## [date] ingest | {topic}` + 明细。
 5. 评分后更新：若对某题参考答案有更优补充，更新该题 `#### 参考答案`（索引表不变），frontmatter `updated`=今日，log 注明「更新参考答案 {ID}」。
@@ -146,15 +149,15 @@ resume-agent/
 
 1. 接收话题
 2. 检索准备：**Query wiki（去重）**（读 index + 话题页，取已出题目/考点）+ 互联网搜索补充考点
-3. 生成题目与参考答案：避开 wiki 已登记题目，优先覆盖未出题考点；**为每题同步生成参考答案**；仅将题目保存到 `question/{date}-{topic}-{index}.md`（不含答案，index 为该话题递增序号，按已存在同话题文件取 max+1）
-4. **回写登记（Ingest）**：N 题及其参考答案登记进 `wiki/topics/{topic}.md`（不存在则创建含知识体系），更新 index + log
+3. 生成题目与参考答案：避开 wiki 已登记题目，优先覆盖未出题考点；**为每题同步生成参考答案**；按话题页当前最大序号**预分配本批题目 ID**（`{topic}-(max+1)` 起），仅将题目保存到 `question/{date}-{topic}-{index}.md`（不含答案，每题 `## Q` 下含 `<!-- id: ... -->` 锚点，index 为该话题递增序号，按已存在同话题文件取 max+1）
+4. **回写登记（Ingest）**：N 题及其参考答案登记进 `wiki/topics/{topic}.md`（**使用预分配的同一批 ID**，与 question 文件锚点一一对应；话题页不存在则创建含知识体系），更新 index + log
 5. 通知用户作答
 6. 等待作答
 7. 评分反馈：**Query wiki（答案检索）** 取回已登记参考答案作为基准 -> 逐题打分 -> 在 question 文件补 `### evaluation`（AI 参考答案取自 wiki）-> 汇总总成绩；若有更优补充则 Ingest 更新 wiki 答案
 
 ## 11. 题库生成
 
-基于 `wiki/topics/*.md` 的知识体系 + 已登记题目（含参考答案），生成跨话题或单话题的大规模题库，归档到 `wiki/banks/{name}.md`。生成时同样 Query 去重，新题及其参考答案 Ingest 回对应话题页。当前仅建 `wiki/banks/` 占位并在 SCHEMA 描述工作流，专用技能可后续再加。
+基于 `wiki/topics/*.md` 的知识体系 + 已登记题目（含参考答案），生成跨话题或单话题的大规模题库，归档到 `wiki/banks/{name}.md`。生成时同样 Query 去重（含关联话题索引表），新题及其参考答案 Ingest 回对应话题页（使用预分配 ID），题库内引用已登记题时注明 ID。专用技能见 `.opencode/skills/bank-generator/SKILL.md`。
 
 ## 12. 决策记录
 
@@ -170,9 +173,9 @@ resume-agent/
 | 预生成答案可见性 | 不写入 question 文件              | 避免用户作答前看到答案；评分时再从 wiki 取回填入 evaluation                 |
 | Raw sources 层   | 新增 `raw/` 目录（用户源材料，只读） | 补齐 LLM Wiki 模式的 Raw sources 层；仅放用户策展的外部材料，可选接入 Ingest，不落盘联网搜索结果；`raw/` 不进 index，溯源靠 log |
 | 渐进式加载       | 话题页内置「题目索引表」（单文件，不拆详情页） | 题目增多后避免去重/答案检索全量加载：去重只读索引表 + 知识体系，答案检索用 Grep 定位详情分段读。不拆文件以符合「整文件读写、不切分」约束 |
+| 评分题文对齐     | question 文件每题加 `<!-- id: -->` 锚点       | 评分按 ID 精确检索，消除「按摘要模糊对齐」的对错风险；隐藏注释不含答案，不违反答案不可见约束。生成时预分配 ID，Ingest 用同一批 |
 
 ## 13. 后续工作
 
-- 题库生成专用技能（当前仅占位 + SCHEMA 描述工作流）。
 - 概念页（`wiki/concepts/`，跨话题复用高频考点）- 可选增强。
 - 规模增长后评估是否引入轻量搜索（当前 index.md 足够）。

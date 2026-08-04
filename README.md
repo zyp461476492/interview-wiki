@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | **Raw sources** | `raw/` + `question/` | 不可变来源：`raw/` 放用户策展的外部源材料（LLM 只读），`question/` 放练习会话交互记录 |
 | **Wiki** | `wiki/` | LLM 生成维护的持久知识库：话题页（知识体系+题目登记+参考答案）/ 题库页 / 索引 / 日志 |
-| **Schema** | `AGENTS.md` + `wiki/SCHEMA.md` + `.opencode/.skills/` | 约定与工作流 |
+| **Schema** | `AGENTS.md` + `wiki/SCHEMA.md` + `.opencode/skills/` | 约定与工作流 |
 
 ## 目录结构
 
@@ -33,9 +33,10 @@ resume-agent/
 │   ├── topics/                     # 话题页
 │   └── banks/                      # 题库页
 ├── question/                       # 练习会话（交互记录）
-└── .opencode/.skills/
+└── .opencode/skills/
     ├── wiki/SKILL.md               # 三操作：Ingest / Query / Lint
-    └── topic-interviewer/          # 面试题生成与评分
+    ├── topic-interviewer/          # 面试题生成与评分
+    └── bank-generator/             # 题库生成（选题+补新题+归档 banks）
 ```
 
 ## 基本使用流程
@@ -110,6 +111,17 @@ Java 基础 已经出过哪些题？
 ```
 AI 会 Query wiki 列出该话题已登记题目与考点覆盖情况。
 
+### 生成题库
+
+基于 wiki 已登记题目生成精选题集，归档到 `wiki/banks/`（引用已登记题，不足时补新题并回写话题页）：
+
+```
+生成 50 道 Java 高级题库
+把 java基础 整理成一套 30 题题库
+```
+
+> 题库格式见 [`wiki/SCHEMA.md`](wiki/SCHEMA.md)，流程见 [`.opencode/skills/bank-generator/SKILL.md`](.opencode/skills/bank-generator/SKILL.md)。
+
 ## wiki 三操作
 
 | 操作 | 触发时机 | 简述 |
@@ -118,7 +130,7 @@ AI 会 Query wiki 列出该话题已登记题目与考点覆盖情况。
 | **Ingest** | 生成题目后；评分后；放入 raw 源材料时 | 创建/更新话题页（题目登记+参考答案），更新 index 与 log |
 | **Lint** | 用户请求时 | 健康检查并修复 |
 
-详见 [`.opencode/.skills/wiki/SKILL.md`](.opencode/.skills/wiki/SKILL.md)。
+详见 [`.opencode/skills/wiki/SKILL.md`](.opencode/skills/wiki/SKILL.md)。
 
 ## 关键约束
 

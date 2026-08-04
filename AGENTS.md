@@ -1,11 +1,11 @@
 # AGENTS.md
 
 > 本文件为常驻规则层，始终加载。它告诉 LLM：项目存在一个 wiki 知识库、如何与之交互。
-> 详细规格见 `wiki/SCHEMA.md`，操作步骤见 `.opencode/.skills/wiki/SKILL.md`，整体架构见 `ARCHITECTURE.md`。
+> 详细规格见 `wiki/SCHEMA.md`，操作步骤见 `.opencode/skills/wiki/SKILL.md`，整体架构见 `ARCHITECTURE.md`。
 
 ## 项目概述
 
-resume-agent 是一套基于 [LLM Wiki 模式](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 的面试题知识库与练习系统。`wiki/` 是由 LLM 增量维护的持久知识库，积累「话题 + 题目 + 参考答案」，用于生成去重、评分基准与题库编排。
+resume-agent 是一套基于 [LLM Wiki 模式](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) 的面试题知识库与练习系统。`wiki/` 是由 LLM 增量维护的持久知识库，积累「话题 + 题目 + 参考答案」，用于生成去重、评分基准与题库编排。技能：`topic-interviewer`（生成/评分）、`wiki`（三操作）、`bank-generator`（题库生成，见 `.opencode/skills/bank-generator/SKILL.md`）。
 
 ## 关键约束
 
@@ -23,7 +23,7 @@ resume-agent 是一套基于 [LLM Wiki 模式](https://gist.github.com/karpathy/
 | **Ingest** | 生成题目**之后**（及评分后、用户放入 `raw/` 源材料时）      | 创建/更新 `wiki/topics/{topic}.md`（知识体系 + **题目索引表** + 题目登记 + **参考答案**，索引表与题目登记同步维护），更新 `wiki/index.md`，追加 `wiki/log.md`；评分后若有更优答案则更新对应题；raw 源材料 Ingest 为可选支线（补知识体系考点、log 记来源）。**未 Ingest 视为流程未完成。** |
 | **Lint**   | 用户请求时                        | 检查重复/近似题、参考答案缺失、覆盖缺口、索引表与题目登记不同步、孤立页、索引不同步，报告并修复。                                   |
 
-具体步骤见 `.opencode/.skills/wiki/SKILL.md`；页面格式见 `wiki/SCHEMA.md`。
+具体步骤见 `.opencode/skills/wiki/SKILL.md`；页面格式见 `wiki/SCHEMA.md`。
 
 ## 跨会话须知
 

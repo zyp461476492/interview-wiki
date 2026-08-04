@@ -30,3 +30,15 @@
 - 同步更新：知识体系大纲（新增核心机制/对象创建与复制/新特性等考点）、题目索引表
 - 来源：question/2026-07-31-java基础-3.md
 - 注：该文件为未评分预生成题目，参考答案为本次 Ingest 时同步补写
+
+## [2026-08-04] ingest | MySQL
+- 首次建立话题页 topics/mysql.md（含知识体系大纲）
+- 登记/新增题目 10 道（mysql-001 ~ mysql-010，含参考答案）
+- 来源：question/2026-08-04-mysql-1.md
+- 同步更新：wiki/index.md 话题页表新增 MySQL 行
+
+## [2026-08-04] lint | Java 基础
+- 校验通过：题目索引表 26 行 = 题目登记 26 节 = frontmatter question_count 26 = index.md 题量 26；26 题均有「#### 参考答案」
+- 修复断链：topics/java基础.md 关联区移除指向不存在话题页的 [[java并发]]、[[jvm]]（关联区只链接已存在话题页，新话题建立时补链）
+- 修复 SCHEMA 示例自洽：话题页示例 question_count 0 -> 2
+- 规范明确：Query 默认不记 log，仅去重结果显著影响生成决策时可记一条（已写入 SCHEMA 与 wiki SKILL）

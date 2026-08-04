@@ -17,7 +17,7 @@
 | -------------- | -------------------------- | --------------------------------------------------------------------------------------- |
 | Raw sources    | 不可变来源，LLM 只读       | `raw/`（用户策展的外部源材料：文章/笔记/PDF 转文本等）+ 互联网检索结果（临时，不落盘）+ 练习会话 `question/*.md`（交互记录，评分时写入 evaluation，AI 参考答案为 wiki 副本） |
 | Wiki           | LLM 维护的持久 markdown 库 | `wiki/`（话题页含知识体系+题目登记+参考答案 / 题库页 / 索引 / 日志）                    |
-| Schema         | 约定 / 工作流              | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `.opencode/.skills/wiki/SKILL.md`（操作） |
+| Schema         | 约定 / 工作流              | `AGENTS.md`（规则）+ `wiki/SCHEMA.md`（规格）+ `.opencode/skills/wiki/SKILL.md`（操作） |
 
 ## 目录结构
 
@@ -36,11 +36,12 @@ resume-agent/
 │   ├── topics/                     # 话题页：知识体系 + 题目登记 + 参考答案
 │   └── banks/                      # 题库页：精选题集（归档回 wiki）
 ├── question/                       # 练习会话（交互记录，wiki 外）
-└── .opencode/.skills/
+└── .opencode/skills/
     ├── wiki/SKILL.md               # 三操作：Ingest / Query / Lint
-    └── topic-interviewer/          # 面试题生成与评分
-        ├── SKILL.md                # 接入 Query/Ingest
-        └── references/question-template.md
+    ├── topic-interviewer/          # 面试题生成与评分
+    │   ├── SKILL.md                # 接入 Query/Ingest
+    │   └── references/question-template.md
+    └── bank-generator/SKILL.md     # 题库生成（选题+补新题+归档 banks）
 ```
 
 ## 三种操作
@@ -49,7 +50,7 @@ resume-agent/
 - **Ingest（回写登记）**：生成/评分后调用。创建/更新话题页（知识体系 + **题目索引表** + 题目登记 + **参考答案**），同步维护索引表与题目登记，更新 `wiki/index.md`，追加 `wiki/log.md`；评分后若对答案有更优补充则更新对应题参考答案。
 - **Lint（健康检查）**：用户请求时调用。检查重复/近似题、参考答案缺失、覆盖缺口、索引表与题目登记不同步、孤立页、索引不同步，报告并修复。
 
-详见 `.opencode/.skills/wiki/SKILL.md` 与 `docs/wiki-design.md`。
+详见 `.opencode/skills/wiki/SKILL.md` 与 `docs/wiki-design.md`。
 
 ## 数据流
 
@@ -57,21 +58,21 @@ resume-agent/
 用户给话题
    │
    ▼
-[topic-interviewer] ──Query(去重)──> 读 wiki/topics 索引表 + index ──> 已出题目/考点
+[topic-interviewer] ──Query(去重)──> 读 wiki/topics 索引表 + index（含关联话题索引表）──> 已出题目/考点
    │                                                 │
    ▼                                                 │
 生成 N 题（默认 8）+ 参考答案（避开重复）<──────────────────────┘
    │
-   ├──> 保存 question/{date}-{topic}-{index}.md（仅题目，不含答案；index 为该话题递增序号）
+   ├──> 保存 question/{date}-{topic}-{index}.md（仅题目，不含答案；每题含 <!-- id: --> 锚点，index 为该话题递增序号）
    │
    ▼
-[topic-interviewer] ──Ingest──> 写 wiki/topics（索引表 + 题目登记 + 参考答案）+ index + log
+[topic-interviewer] ──Ingest──> 写 wiki/topics（索引表 + 题目登记 + 参考答案，使用预分配的同一批 ID）+ index + log
    │
    ▼
 通知用户作答 -> 用户作答
    │
    ▼
-[topic-interviewer] ──Query(检索答案)──> Grep 定位 wiki/topics 题节 ──> 已登记参考答案
+[topic-interviewer] ──Query(检索答案)──> 读 question 锚点取 ID ──> Grep 定位 wiki/topics 题节 ──> 已登记参考答案
    │
    ▼
 评分（以 wiki 参考答案为基准）+ 写 evaluation 到 question 文件
@@ -93,4 +94,4 @@ resume-agent/
 
 ## 改动同步约定
 
-修改 wiki 相关结构/流程时，同步更新：`ARCHITECTURE.md`、`docs/wiki-design.md`、`wiki/SCHEMA.md`、`AGENTS.md`、`.opencode/.skills/wiki/SKILL.md` 中受影响的部分。
+修改 wiki 相关结构/流程时，同步更新：`ARCHITECTURE.md`、`docs/wiki-design.md`、`wiki/SCHEMA.md`、`AGENTS.md`、`.opencode/skills/wiki/SKILL.md` 中受影响的部分。
