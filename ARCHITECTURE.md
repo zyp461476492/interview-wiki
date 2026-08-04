@@ -63,7 +63,7 @@ resume-agent/
    ▼                                                 │
 生成 N 题（默认 8）+ 参考答案（避开重复）<──────────────────────┘
    │
-   ├──> 保存 question/{date}-{topic}-{index}.md（仅题目，不含答案；每题含 <!-- id: --> 锚点，index 为该话题递增序号）
+   ├──> 保存 question/{date}-{topic}-{index}.md（仅题目，不含答案；每题标题 `## Q{n}：**题目**` 加粗、含 <!-- id: --> 锚点，index 为该话题递增序号）
    │
    ▼
 [topic-interviewer] ──Ingest──> 写 wiki/topics（索引表 + 题目登记 + 参考答案，使用预分配的同一批 ID）+ index + log

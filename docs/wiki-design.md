@@ -91,8 +91,8 @@ resume-agent/
 
 详见 `wiki/SCHEMA.md`。要点：
 
-- **话题页** `topics/{topic}.md`：frontmatter（topic/created/updated/question_count）+ 知识体系（考点大纲）+ **题目索引表**（`ID | 考点 | 难度 | 摘要`，轻量冗余摘要，用于渐进式加载）+ 题目登记（每题一节 `### {ID}`，含难度/考点/题目/首次生成/来源，节内 `#### 参考答案` 子节存标准答案）+ 关联（`[[话题]]` 链接）。去重 Query 只读索引表 + 知识体系，答案检索用 Grep 定位题节分段读，避免全量加载。
-- **题库页** `banks/{name}.md`：frontmatter（bank/size/created/topics）+ 说明 + 题目列表（每题注明难度/考点，引用已登记 ID 或新题）。
+- **话题页** `topics/{topic}.md`：frontmatter（topic/created/updated/question_count）+ 知识体系（考点大纲）+ **题目索引表**（`ID | 考点 | 难度 | 摘要`，轻量冗余摘要，用于渐进式加载）+ 题目登记（每题一节 `### {ID}`，含难度/考点/题目（**加粗**）/首次生成/来源，节内 `#### 参考答案` 子节存标准答案）+ 关联（`[[话题]]` 链接）。去重 Query 只读索引表 + 知识体系，答案检索用 Grep 定位题节分段读，避免全量加载。题目描述一律加粗（话题页 `- 题目：**…**`、question 文件 `## Q{n}：**…**`、题库页 `**题目正文**`），便于阅读时定位题目。
+- **题库页** `banks/{name}.md`：frontmatter（bank/size/created/topics）+ 说明 + 题目列表（每题注明难度/考点，引用已登记 ID 或新题；题目正文加粗）。
 - **index.md**：topics 表 + banks 表。
 - **log.md**：append-only，`## [yyyy-MM-dd] op | subject`。
 
@@ -149,7 +149,7 @@ resume-agent/
 
 1. 接收话题
 2. 检索准备：**Query wiki（去重）**（读 index + 话题页，取已出题目/考点）+ 互联网搜索补充考点
-3. 生成题目与参考答案：避开 wiki 已登记题目，优先覆盖未出题考点；**为每题同步生成参考答案**；按话题页当前最大序号**预分配本批题目 ID**（`{topic}-(max+1)` 起），仅将题目保存到 `question/{date}-{topic}-{index}.md`（不含答案，每题 `## Q` 下含 `<!-- id: ... -->` 锚点，index 为该话题递增序号，按已存在同话题文件取 max+1）
+3. 生成题目与参考答案：避开 wiki 已登记题目，优先覆盖未出题考点；**为每题同步生成参考答案**；按话题页当前最大序号**预分配本批题目 ID**（`{topic}-(max+1)` 起），仅将题目保存到 `question/{date}-{topic}-{index}.md`（不含答案，每题标题 `## Q{n}：**题目**` 加粗、下含 `<!-- id: ... -->` 锚点，index 为该话题递增序号，按已存在同话题文件取 max+1）
 4. **回写登记（Ingest）**：N 题及其参考答案登记进 `wiki/topics/{topic}.md`（**使用预分配的同一批 ID**，与 question 文件锚点一一对应；话题页不存在则创建含知识体系），更新 index + log
 5. 通知用户作答
 6. 等待作答

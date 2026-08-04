@@ -42,3 +42,18 @@
 - 修复断链：topics/java基础.md 关联区移除指向不存在话题页的 [[java并发]]、[[jvm]]（关联区只链接已存在话题页，新话题建立时补链）
 - 修复 SCHEMA 示例自洽：话题页示例 question_count 0 -> 2
 - 规范明确：Query 默认不记 log，仅去重结果显著影响生成决策时可记一条（已写入 SCHEMA 与 wiki SKILL）
+
+## [2026-08-04] ingest | MySQL
+- 新增登记题目 2 道（mysql-011 undo log 详解、mysql-012 redo log 详解，含参考答案）
+- 同步更新：题目索引表追加 2 行、frontmatter question_count 10 -> 12、index.md 题量 10 -> 12
+- 来源：用户请求（会话补充，2026-08-04），细化 mysql-007 日志体系概述中的 undo/redo 深度考点
+
+## [2026-08-04] ingest | MySQL
+- 新增登记题目 1 道（mysql-013 undo/redo/binlog 工作时机与对比，含参考答案）
+- 同步更新：题目索引表追加 1 行、frontmatter question_count 12 -> 13、index.md 题量 12 -> 13
+- 来源：用户请求（会话补充，2026-08-04），承接 mysql-011/012 补充三者横向对比与一条事务内的写入时序
+
+## [2026-08-04] lint | 全库（题目描述加粗）
+- 全库题目描述统一加粗：话题页题目登记 `- 题目：**{题目}**`、question 文件标题 `## Q{n}：**{题目}**`、题库页题目正文加粗，便于阅读时快速定位题目
+- 涉及文件：question/*.md 4 份（共 35 题标题）、wiki/topics/*.md 2 份（java基础 26 题 + mysql 12 题登记）
+- 同步更新规格与模板：wiki/SCHEMA.md、question-template.md、wiki/topic-interviewer/bank-generator SKILL、ARCHITECTURE.md、docs/wiki-design.md

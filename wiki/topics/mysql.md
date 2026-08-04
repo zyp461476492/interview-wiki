@@ -2,7 +2,7 @@
 topic: MySQL
 created: 2026-08-04
 updated: 2026-08-04
-question_count: 10
+question_count: 13
 ---
 
 # MySQL
@@ -34,12 +34,15 @@ question_count: 10
 | mysql-008 | 慢 SQL 优化/EXPLAIN | 实战 | 慢查询排查、EXPLAIN 字段、索引失效 |
 | mysql-009 | 锁机制/死锁 | 实战 | 行锁/间隙锁/临键锁、死锁排查与避免 |
 | mysql-010 | 大表优化 | 开放 | 千万级数据优化、分库分表/分区/读写分离 |
+| mysql-011 | undo log | 进阶 | undo log 作用/回滚段/版本链/分类/purge 机制 |
+| mysql-012 | redo log | 进阶 | redo log WAL/LSN/循环写/刷盘策略/崩溃恢复 |
+| mysql-013 | 日志体系/写入时机 | 进阶 | undo/redo/binlog 工作时机与三者对比、2PC 写入顺序 |
 
 ## 题目登记
 
 ### mysql-001
 - 难度：基础 | 考点：SQL 执行流程、Server 层组件、存储引擎层
-- 题目：MySQL 中一条 SQL 语句的执行流程是怎样的？请简述 Server 层各组件的作用，以及存储引擎层与 Server 层的关系。
+- 题目：**MySQL 中一条 SQL 语句的执行流程是怎样的？请简述 Server 层各组件的作用，以及存储引擎层与 Server 层的关系。**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -56,7 +59,7 @@ question_count: 10
 
 ### mysql-002
 - 难度：基础 | 考点：InnoDB vs MyISAM、默认存储引擎
-- 题目：InnoDB 与 MyISAM 存储引擎有哪些主要区别？为什么 MySQL 5.5 之后默认存储引擎改为 InnoDB？
+- 题目：**InnoDB 与 MyISAM 存储引擎有哪些主要区别？为什么 MySQL 5.5 之后默认存储引擎改为 InnoDB？**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -81,7 +84,7 @@ question_count: 10
 
 ### mysql-003
 - 难度：基础 | 考点：ACID 特性、InnoDB 保证机制
-- 题目：简述事务的 ACID 特性。InnoDB 分别通过什么机制来保证这四个特性？
+- 题目：**简述事务的 ACID 特性。InnoDB 分别通过什么机制来保证这四个特性？**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -99,7 +102,7 @@ question_count: 10
 
 ### mysql-004
 - 难度：进阶 | 考点：B+ 树索引结构、索引数据结构对比
-- 题目：为什么 MySQL InnoDB 索引使用 B+ 树？请与 B 树、Hash 索引、红黑树对比分析其优劣。
+- 题目：**为什么 MySQL InnoDB 索引使用 B+ 树？请与 B 树、Hash 索引、红黑树对比分析其优劣。**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -120,7 +123,7 @@ question_count: 10
 
 ### mysql-005
 - 难度：进阶 | 考点：聚簇索引/非聚簇索引、回表、覆盖索引
-- 题目：什么是聚簇索引和非聚簇索引（二级索引）？什么是回表？如何通过覆盖索引避免回表？请举例说明。
+- 题目：**什么是聚簇索引和非聚簇索引（二级索引）？什么是回表？如何通过覆盖索引避免回表？请举例说明。**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -137,7 +140,7 @@ question_count: 10
 
 ### mysql-006
 - 难度：进阶 | 考点：隔离级别、并发问题、MVCC、ReadView
-- 题目：MySQL 的四种事务隔离级别分别解决了哪些并发问题？什么是 MVCC？InnoDB 在 RC 和 RR 下如何通过 ReadView 实现快照读？
+- 题目：**MySQL 的四种事务隔离级别分别解决了哪些并发问题？什么是 MVCC？InnoDB 在 RC 和 RR 下如何通过 ReadView 实现快照读？**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -172,7 +175,7 @@ question_count: 10
 
 ### mysql-007
 - 难度：进阶 | 考点：redo log/undo log/binlog、两阶段提交、crash-safe
-- 题目：简述 MySQL 中 redo log、undo log、binlog 的作用与区别。为什么需要两阶段提交（2PC）？如何保证 crash-safe？
+- 题目：**简述 MySQL 中 redo log、undo log、binlog 的作用与区别。为什么需要两阶段提交（2PC）？如何保证 crash-safe？**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -193,7 +196,7 @@ question_count: 10
 
 ### mysql-008
 - 难度：实战 | 考点：慢 SQL 优化、EXPLAIN、索引失效
-- 题目：如何排查和优化一条慢 SQL？请说明 EXPLAIN 中 type、key、rows、Extra 等关键字段的含义，并列举常见索引失效场景。
+- 题目：**如何排查和优化一条慢 SQL？请说明 EXPLAIN 中 type、key、rows、Extra 等关键字段的含义，并列举常见索引失效场景。**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -225,7 +228,7 @@ question_count: 10
 
 ### mysql-009
 - 难度：实战 | 考点：锁机制、间隙锁/临键锁、死锁
-- 题目：InnoDB 中有哪些锁（行锁/表锁/间隙锁/临键锁）？什么场景下会产生死锁？如何排查与避免死锁？
+- 题目：**InnoDB 中有哪些锁（行锁/表锁/间隙锁/临键锁）？什么场景下会产生死锁？如何排查与避免死锁？**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -262,7 +265,7 @@ question_count: 10
 
 ### mysql-010
 - 难度：开放 | 考点：大表优化、分库分表、分区表、读写分离
-- 题目：当单表数据量达到千万级，你会从哪些维度进行优化？请对比分库分表、分区表、读写分离等方案的适用场景与权衡。
+- 题目：**当单表数据量达到千万级，你会从哪些维度进行优化？请对比分库分表、分区表、读写分离等方案的适用场景与权衡。**
 - 首次生成：2026-08-04 | 来源：question/2026-08-04-mysql-1.md
 
 #### 参考答案
@@ -288,6 +291,83 @@ question_count: 10
   - 业务域清晰 → 先**垂直分库**到微服务。
 - **分片要点**：分片键选择（高频查询字段、数据均匀、避免热点）、全局 ID（雪花算法/号段模式）、跨片聚合尽量减少、用中间件（ShardingSphere/Vitess）屏蔽路由、数据迁移与扩容预案（一致性 hash 或 2 倍扩容）。
 - **权衡点**：分库分表不是银弹，会牺牲事务/join/运维便利性；应在「SQL 优化 + 索引 + 缓存 + 读写分离」做到极限后再考虑，且尽量延迟到真正必要。
+
+### mysql-011
+- 难度：进阶 | 考点：undo log、回滚段、版本链、purge
+- 题目：**请详细介绍 InnoDB 的 undo log：它的作用、记录的内容、存储方式、如何配合 MVCC 形成版本链，以及什么时机被清理（purge）？**
+- 首次生成：2026-08-04 | 来源：用户请求（会话补充，2026-08-04）
+
+#### 参考答案
+- **定位**：undo log 是 InnoDB 引擎层的逻辑日志，与 redo log（物理日志）相对，记录的是「反向操作 / 修改前镜像」，而非数据页的物理修改。
+- **两大作用**：
+  1. **保证原子性（回滚）**：事务执行过程中若中途失败或被 rollback，根据 undo log 反向操作把数据还原到修改前状态。
+  2. **支撑 MVCC（多版本）**：通过 undo 历史版本 + ReadView，让快照读读到事务开始前已提交的旧版本，实现读写不互斥（详见 mysql-006）。
+- **记录的内容（按操作类型）**：
+  - **insert undo**：记录被插入行的主键等标识，回滚时据此删除该行；insert 的 undo 在事务提交后即可删除。
+  - **update undo**：记录被修改列的原值（旧值），回滚时用旧值覆盖回；同时记录「版本号 + 指针」用于 MVCC。
+  - **delete undo**：InnoDB 的删除本质是「标记删除」（打 delete 标记，行仍留在索引中），undo 记录该行旧内容，回滚时取消标记；真正的物理删除由 purge 完成。
+- **存储方式**：
+  - 存放在**回滚段（rollback segment）**中，一个回滚段包含多个 undo 页；undo 页从 undo 表空间（`innodb_undo_tablespaces`，8.0 独立于 system tablespace）分配。
+  - 每个事务在写 undo 时会先写 redo log（undo 页本身的修改也要靠 redo log 持久化，崩溃恢复时先重做 undo 页再回滚），保证 undo 也 crash-safe。
+- **版本链（MVCC 关键）**：每行记录有隐藏列 `trx_id`（最近修改该行的事务 id）和 `roll_pointer`（指向 undo log 中上一版本的记录）。每次 update 产生一个 undo 版本，通过 roll_pointer 把该行的历史版本串成链表；MVCC 的 ReadView 判断各版本可见性，从链上找到第一个可见版本返回（详见 mysql-006）。
+- **purge（清理时机）**：
+  - 事务提交后 undo 不能立即删：可能还有更老事务的快照读正在引用历史版本。
+  - 由后台 **purge 线程**周期扫描，当 undo 版本「没有任何 ReadView（活跃事务）还会引用」时，才真正清理 undo 记录，并把标记删除的行从索引与数据页中物理移除（释放空间）。
+  - 若 purge 跟不上（长事务/大量未提交事务），undo 膨胀会导致表空间增长、性能下降——这是长事务的一个隐患。
+
+### mysql-012
+- 难度：进阶 | 考点：redo log、WAL、LSN、checkpoint、刷盘策略、崩溃恢复
+- 题目：**请详细介绍 InnoDB 的 redo log：为什么需要它（WAL）？它记录什么、如何存储与循环写？`innodb_flush_log_at_trx_commit` 三个值有何区别？崩溃时如何用它恢复？**
+- 首次生成：2026-08-04 | 来源：用户请求（会话补充，2026-08-04）
+
+#### 参考答案
+- **为什么需要（WAL，Write-Ahead Logging）**：数据页在 Buffer Pool 中，修改先在内存完成；若每次都把脏页随机写回磁盘，性能极差。WAL 策略：**修改前先写 redo log（顺序追加写，很快），再改内存页**；脏页刷盘可以批量、延迟进行。这样即便崩溃，已提交事务的修改也能用 redo log 重做，保证持久性（crash-safe）。这也是 MySQL 写入性能高的核心原因。
+- **记录什么**：redo log 是**物理日志**（页面级别）：记录「哪个表空间、哪个页号、哪个偏移位置被改成了什么」，粒度是页，比逻辑日志小且可幂等重放。注意：**undo log 页的修改也先写 redo log**，所以 redo 同时保护 undo 的持久化。
+- **存储与循环写**：
+  - 固定大小的一组文件（默认 `ib_logfile0`/`ib_logfile1`，可配置 `innodb_log_file_size`），采用**循环写**：写满一个文件接着写下一个，绕回覆盖最旧部分。
+  - 两个关键指针：**write pos**（当前写入位置，随事务提交推进）与 **checkpoint**（本次刷盘可覆盖的位置）。write pos 与 checkpoint 之间是「已写 redo 但脏页尚未刷盘」的区域；若 write pos 追上 checkpoint，说明 redo 已满，需先把对应脏页刷盘推进 checkpoint 才能继续写。
+  - **LSN（Log Sequence Number）**：单调递增的日志序号，redo log 与数据页、checkpoint 之间用 LSN 对齐（数据页头部记录其被修改到的 LSN，判断该页是否已刷过）。
+- **刷盘策略 `innodb_flush_log_at_trx_commit`**：
+  - **0**：事务提交时**不刷盘**，仅留在 redo buffer，由后台每 1 秒刷一次。性能最高，但崩溃最多丢失最近 1 秒的已提交事务。
+  - **1（默认，最安全）**：每次提交都**强制刷盘**（fsync 到磁盘）。任何崩溃都不丢已提交事务，是默认值。
+  - **2**：每次提交写入 **OS 文件系统缓存（page cache）**，每 1 秒 fsync 到磁盘。MySQL 进程崩溃不丢（数据在 OS 缓存），但操作系统崩溃/断电会丢最近 1 秒数据。性能介于 0 与 1 之间。
+  - 权衡：要严格不丢选 1；能接受秒级丢失、追求高吞吐可考虑 2/0。
+- **崩溃恢复流程**：
+  1. 启动时从 **checkpoint（已刷盘边界）** 处开始向后扫描 redo log。
+  2. 对 redo log 中的修改按 LSN 顺序**重做（redo）**，恢复已提交事务对数据页的修改（含先重做 undo 页）。
+  3. 结合 undo log **回滚（undo）**尚未提交的事务（redo 中无 commit 标记、binlog 未完成的），使库恢复到崩溃前一致状态。
+  4. 正常关闭时可通过 `innodb_fast_shutdown`/`innodb_force_recovery` 等控制恢复与修复级别。
+- **与 binlog 的配合**：redo 是引擎层物理日志，binlog 是 Server 层逻辑日志；两者通过**两阶段提交（2PC）** 保证一致性，写入顺序为 redo（prepare）→ binlog → redo（commit），崩溃恢复据此判断是否提交该事务（详见 mysql-007）。
+
+### mysql-013
+- 难度：进阶 | 考点：日志体系、写入时机、undo/redo/binlog 对比
+- 题目：undo log、redo log、binlog 分别在什么时机写入？三者如何对比？请结合一条 UPDATE 事务的执行过程说明。
+- 首次生成：2026-08-04 | 来源：用户请求（会话补充，2026-08-04）
+
+#### 参考答案
+- **一条 UPDATE 事务的写入时机**：
+
+  | 阶段 | undo log | redo log | binlog |
+  |------|----------|----------|--------|
+  | 事务开始 | — | — | — |
+  | 修改前 | **先写 undo**（旧值/反向操作），供回滚与 MVCC | undo 页的修改**先写 redo** 持久化 | — |
+  | 修改数据页 | — | **再写 redo**（物理页修改，顺序写 redo buffer） | — |
+  | 事务提交（2PC） | 提交后暂留（供 MVCC），purge 后清理 | ① redo log **prepare**（`innodb_flush_log_at_trx_commit=1` 时此时 fsync） | ② **写 binlog**（追加写，逻辑操作） |
+  | 提交完成 | 保留至无快照引用 | ③ redo log 改为 **commit** | 永久保留（可归档） |
+  | 事务回滚 | **立即用 undo 反向操作还原** | 已写部分被忽略（无 commit） | 未写 |
+  | 崩溃恢复 | 回滚未提交事务 | 重做已提交事务 | 配合判断事务是否应提交；主从复制/PITR 用 |
+- **核心对比**：
+
+  | 维度 | undo log | redo log | binlog |
+  |------|----------|----------|--------|
+  | 所在层级 | InnoDB 引擎层 | InnoDB 引擎层 | Server 层（所有引擎共用） |
+  | 日志类型 | 逻辑日志（反向操作/旧值） | 物理日志（页级修改） | 逻辑日志（SQL/行变更） |
+  | 保证 | 原子性 A + MVCC | 持久性 D（crash-safe） | 复制 + 归档恢复（PITR） |
+  | 写入时机 | 修改数据**前** | 修改数据**前**（WAL），提交时 prepare→commit | 提交时（redo prepare 之后） |
+  | 存储 | 回滚段/undo 表空间，可循环复用 | 固定大小文件 `ib_logfile*`，**循环写** | 追加写文件，**不覆盖** |
+  | 生命周期 | 提交后 purge 清理 | checkpoint 后覆盖 | 永久保留 |
+- **一句话总结执行顺序**：**先写 undo（改前）→ 再写 redo（WAL）→ 提交时 redo prepare → binlog → redo commit**；回滚靠 undo，崩溃重做靠 redo，主从一致靠 2PC 协调 redo 与 binlog。
+- **为什么 binlog 写在 redo prepare 之后 commit 之前（2PC 顺序）**：若 redo 先 commit 再写 binlog，binlog 未写时崩溃会导致主库有数据但从库没同步；若 binlog 先写再提交 redo，则可能出现从库多数据。只有「prepare → binlog → commit」才能在崩溃恢复时用 binlog 是否存在来判定该事务提交与否，保证主从一致（详见 mysql-007）。
 
 ## 关联
 
